@@ -5,14 +5,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import YahooFinance from 'yahoo-finance2';
 import fs from 'fs/promises';
+import cron from 'node-cron';
 
 // __dirname 在 ES Module 中不可用，需要手动创建
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port =  4001;
-const host =  '127.0.0.1';
+const port = 4001;
+const host = '127.0.0.1';
 
 
 // 静态文件服务
@@ -28,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 const yahooFinance = new YahooFinance();
 async function getData(code) {
     try {
-        console.log(`正在获取${code}历史数据...`);
+        console.log(`正在获取${code}历史数据`, new Date());
         const result = await yahooFinance.chart(code, {
             period1: '2000-01-01',   // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
             // period2: '2026-01-01',// 结束日期 (默认到最新)
@@ -36,7 +37,7 @@ async function getData(code) {
         });
 
         const quotes = result.quotes;
-        console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
+        // console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
         const aa = transformData(quotes);
         const filePath = path.join(__dirname, 'public', `${code}.json`);
         await fs.writeFile(filePath, JSON.stringify(aa, null, 2), 'utf-8');
@@ -54,16 +55,23 @@ function transformData(rawData) {
         close: item.close
     }));
 }
-getData('qqq');
-getData('spy');
+
 
 
 
 // --- 启动服务器 ---
 app.listen(port, host, () => {
     console.log(`Start HTTP server @ ${host}:${port}`);
+    getData('qqq');
+    getData('spy');
 });
-
+cron.schedule('0 6 * * *', () => {
+    console.log('[cron] 美东时间 06:00 到达，开始执行定时任务...');
+    getData('qqq');
+    getData('spy');
+}, {
+    timezone: 'America/New_York',
+});
 // --- 优雅关闭 ---
 process.on('SIGINT', () => {
     console.log('Received SIGINT. Shutting down gracefully...');
