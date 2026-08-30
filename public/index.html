@@ -29,8 +29,8 @@
       </div>
 
       <div class="field">
-        <label>每周定投金额 (USD)</label>
-        <input type="number" class="term-input" id="amountInput" value="1000" min="1" step="100">
+        <label>每周定投金额</label>
+        <input type="number" class="term-input" id="amountInput" value="100" min="1" step="100">
       </div>
 
       <div class="freq-badge">每周</b></div>
@@ -94,8 +94,9 @@
     const emptyState = document.getElementById('emptyState');
     const chartDom = document.getElementById('chart');
 
-    const fmtMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-    const fmtMoney2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+    const fmtMoney2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 
     function fmtPct(x) {
       const s = (x * 100).toFixed(2);
@@ -321,8 +322,8 @@
       retEl.textContent = fmtPct(last.ret);
       retEl.className = 'v ' + cls;
       valEl.className = 'v ' + cls;
-      retAbsEl.textContent = (last.value - last.invested >= 0 ? '+' : '') + fmtMoney.format(last.value - last.invested) + ' 浮盈';
-
+      retAbsEl.textContent = (last.value - last.invested >= 0 ? '+' : '') + fmtMoney.format(last.value - last.invested);
+      retAbsEl.className = 'sub ' + cls;
       cntEl.textContent = series.length + ' 次';
       rangeEl.textContent = series[0].date + ' → ' + series[series.length - 1].date;
     }

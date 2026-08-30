@@ -31,12 +31,13 @@ async function getData(code) {
     try {
         console.log(`正在获取${code}历史数据`, new Date());
         const result = await yahooFinance.chart(code, {
-            period1: '2000-01-01',   // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
+            period1: '2000-01-07',   // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
             // period2: '2026-01-01',// 结束日期 (默认到最新)
             interval: '1wk',          // '1d' (日线), '1wk' (周线), '1mo' (月线)
         });
 
         const quotes = result.quotes;
+        // console.log(quotes)
         // console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
         const aa = transformData(quotes);
         const filePath = path.join(__dirname, 'public', `${code}.json`);
@@ -52,7 +53,7 @@ async function getData(code) {
 function transformData(rawData) {
     return rawData.map(item => ({
         date: item.date.toISOString().slice(0, 10),
-        close: item.close
+        close: Math.round(Number(item.close) * 10000) / 10000
     }));
 }
 

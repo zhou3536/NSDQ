@@ -12,7 +12,6 @@
     --amber-dim: #7A5116;
     --green: #3ED990;
     --red: #FF5C6C;
-    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     --sans: 'IBM Plex Sans', -apple-system, sans-serif;
 }
 
@@ -26,7 +25,6 @@ body {
     padding: 0;
     background: var(--bg-void);
     color: var(--text-primary);
-    font-family: var(--mono);
     min-width: 1120px;
 }
 
@@ -52,7 +50,6 @@ body {
 }
 
 .topbar h1 {
-    font-family: var(--mono);
     font-size: 16px;
     font-weight: 600;
     letter-spacing: .04em;
@@ -133,7 +130,6 @@ body {
 }
 
 .term-input {
-    font-family: var(--mono);
     background: var(--bg-input);
     border: 1px solid var(--border-bright);
     color: var(--text-primary);
@@ -243,7 +239,6 @@ input.term-input {
 }
 
 .picker-grid button {
-    font-family: var(--mono);
     background: var(--bg-input);
     border: 1px solid var(--border);
     color: var(--text-secondary);
@@ -291,15 +286,17 @@ input.term-input {
 }
 
 .stat .v {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 600;
-    letter-spacing: .01em;
+    /* letter-spacing: .01em; */
+    font-family: monospace;
 }
 
+.stat .sub.pos,
 .stat .v.pos {
     color: var(--green);
 }
-
+.stat .sub.neg,
 .stat .v.neg {
     color: var(--red);
 }
@@ -309,9 +306,10 @@ input.term-input {
 }
 
 .stat .sub {
-    font-size: 14px;
-    /* color: var(--text-dim); */
+    font-size: 16px;
     margin-top: 4px;
+    font-weight: 600;
+    font-family: monospace;
 }
 
 /* ── chart panel ───────────────────────── */
@@ -373,7 +371,7 @@ input.term-input {
     font-size: 17px;
     display: inline-block;
     margin-bottom: 20px;
-    padding:5px 12px;
+    padding: 5px 12px;
     border-radius: 5px;
     cursor: pointer;
     background-color: #4b4b4b;
