@@ -110,17 +110,17 @@
       });
     }
     // ─────────────────────────────────────────────
-    // 2. 加载 & 解析 CSV
+    // 2. 加载 & 解析 JSON
     // ─────────────────────────────────────────────
     function fetchCsv(dataName) {
-      fetch(`${dataName}.csv`)
+      fetch(`${dataName}.json`)
         .then(function (res) {
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.text();
+          return res.json();
         })
-        .then(function (text) {
-          parseCsv(text);
-          if (priceData.length === 0) throw new Error('CSV 中没有可用数据');
+        .then(function (json) {
+          parseJson(json);
+          if (priceData.length === 0) throw new Error('JSON 中没有可用数据');
           buildDateTree();
           statusEl.classList.remove('err');
           statusText.textContent = '数据已加载 · ' + priceData.length + ' 个交易周';
@@ -133,28 +133,27 @@
           statusEl.classList.add('err');
           statusText.textContent = '数据加载失败';
           emptyState.style.display = 'block';
-          emptyState.innerHTML = '<b>无法加载 qqq.csv</b>请确认该文件与 index.html 位于同一目录，且通过本地/线上服务器访问（而非直接双击打开 file:// ）。<br>错误信息：' + err.message;
+          emptyState.innerHTML = `<b>无法加载 ${dataName}.json</b>请确认该文件与 index.html 位于同一目录，且通过本地/线上服务器访问（而非直接双击打开 file:// ）。<br>错误信息：` + err.message;
         });
     }
     fetchCsv('qqq')
-    function parseCsv(text) {
-      const lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length > 0; });
-      // 跳过表头
+    function parseJson(json) {
       const rows = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',').map(function (c) { return c.replace(/^"|"$/g, '').trim(); });
-        if (cols.length < 2) continue;
-        const rawDate = cols[0];   // e.g. 2026-8-23
-        const close = parseFloat(cols[1]);
+      if (!Array.isArray(json)) { priceData = []; dateIndex = new Map(); return; }
+      for (let i = 0; i < json.length; i++) {
+        const item = json[i];
+        if (!item) continue;
+        const rawDate = item.date;  // e.g. 2026-06-29
+        const close = parseFloat(item.close);
         if (!rawDate || isNaN(close)) continue;
-        const parts = rawDate.split('-');
+        const parts = String(rawDate).split('-');
         if (parts.length !== 3) continue;
         const y = parts[0];
         const m = parts[1].padStart(2, '0');
         const d = parts[2].padStart(2, '0');
         rows.push({ date: y + '-' + m + '-' + d, close: close, y: +y, m: +m, d: +d });
       }
-      // 原始 CSV 是新→旧，翻转为升序（旧→新）
+      // 按日期升序排列（旧→新）
       rows.sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
       priceData = rows;
       dateIndex = new Map();
