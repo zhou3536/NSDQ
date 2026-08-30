@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>纳指回测终端</title>
+  <link href="a.css" rel="stylesheet">
+  <script src="echarts.min.js"></script>
+</head>
+
+<body>
+  <div class="shell">
+
+    <div class="topbar">
+      <h1>纳指100 / 标普500 定投回测终端</h1>
+
+      <div class="status" id="statusEl"><span class="dot"></span><span id="statusText">加载数据中</span></div>
+    </div>
+    <span class="type type-active" onclick="btnClick('qqq',this)">纳指QQQ</span>
+    <span class="type" onclick="btnClick('spy',this)">标普SPY</span>
+    <div class="panel">
+      <div class="field">
+        <label>起始定投日期</label>
+        <button type="button" class="term-input" id="datePickerBtn">—</button>
+        <div class="picker-panel hidden" id="pickerPanel">
+          <div class="picker-breadcrumb" id="pickerBreadcrumb"></div>
+          <div class="picker-grid" id="pickerGrid"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>每周定投金额 (USD)</label>
+        <input type="number" class="term-input" id="amountInput" value="1000" min="1" step="100">
+      </div>
+
+      <div class="freq-badge">每周</b></div>
+    </div>
+
+    <div class="summary" id="summaryEl">
+      <div class="stat">
+        <div class="k">累计投入</div>
+        <div class="v neutral" id="statInvested">—</div>
+      </div>
+      <div class="stat">
+        <div class="k">当前市值</div>
+        <div class="v neutral" id="statValue">—</div>
+      </div>
+      <div class="stat">
+        <div class="k">总收益率</div>
+        <div class="v neutral" id="statReturn">—</div>
+        <div class="sub" id="statReturnAbs"></div>
+      </div>
+      <div class="stat">
+        <div class="k">定投次数</div>
+        <div class="v neutral" id="statCount">—</div>
+        <div class="sub" id="statRange"></div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-panel-head">
+        <h2>累计收益率走势</h2>
+        <span class="legend-note">鼠标悬停查看当期详情 · 可拖动底部滑块缩放区间</span>
+      </div>
+      <div id="chart"></div>
+      <div id="emptyState" class="empty-state" style="display:none;"></div>
+    </div>
+
+    <div class="footnote">
+      数据说明：价格取自每周收盘价，按周定投模拟，收益率为价格收益，未计入分红，仅供个人回测参考。
+    </div>
+
+  </div>
+
+  <script>
+
+
+    // ─────────────────────────────────────────────
+    // 1. 状态
+    // ─────────────────────────────────────────────
+    let priceData = [];        // [{date:'2025-01-05', close: 507.19}] 升序
+    let dateIndex = new Map(); // date -> index in priceData
+    let dateTree = {};        // {year: {month: [ {day, date} ]}}
+    let selectedDate = null;
+    let chart = null;
+
+    const statusEl = document.getElementById('statusEl');
+    const statusText = document.getElementById('statusText');
+    const datePickerBtn = document.getElementById('datePickerBtn');
+    const pickerPanel = document.getElementById('pickerPanel');
+    const pickerBreadcrumb = document.getElementById('pickerBreadcrumb');
+    const pickerGrid = document.getElementById('pickerGrid');
+    const amountInput = document.getElementById('amountInput');
+    const emptyState = document.getElementById('emptyState');
+    const chartDom = document.getElementById('chart');
+
+    const fmtMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+    const fmtMoney2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+
+    function fmtPct(x) {
+      const s = (x * 100).toFixed(2);
+      return (x >= 0 ? '+' : '') + s + '%';
+    }
+    function btnClick(text, elm) {
+      fetchCsv(text)
+      const spans = document.querySelectorAll('.type');
+
+      spans.forEach(span => {
+        span.classList.toggle('type-active', span === elm)
+      });
+    }
+    // ─────────────────────────────────────────────
+    // 2. 加载 & 解析 CSV
+    // ─────────────────────────────────────────────
+    function fetchCsv(dataName) {
+      fetch(`${dataName}.csv`)
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.text();
+        })
+        .then(function (text) {
+          parseCsv(text);
+          if (priceData.length === 0) throw new Error('CSV 中没有可用数据');
+          buildDateTree();
+          statusEl.classList.remove('err');
+          statusText.textContent = '数据已加载 · ' + priceData.length + ' 个交易周';
+          selectedDate = priceData[0].date; // 默认取最早日期，展示全区间
+          datePickerBtn.textContent = selectedDate;
+          initChart();
+          recompute();
+        })
+        .catch(function (err) {
+          statusEl.classList.add('err');
+          statusText.textContent = '数据加载失败';
+          emptyState.style.display = 'block';
+          emptyState.innerHTML = '<b>无法加载 qqq.csv</b>请确认该文件与 index.html 位于同一目录，且通过本地/线上服务器访问（而非直接双击打开 file:// ）。<br>错误信息：' + err.message;
+        });
+    }
+    fetchCsv('qqq')
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length > 0; });
+      // 跳过表头
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(function (c) { return c.replace(/^"|"$/g, '').trim(); });
+        if (cols.length < 2) continue;
+        const rawDate = cols[0];   // e.g. 2026-8-23
+        const close = parseFloat(cols[1]);
+        if (!rawDate || isNaN(close)) continue;
+        const parts = rawDate.split('-');
+        if (parts.length !== 3) continue;
+        const y = parts[0];
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        rows.push({ date: y + '-' + m + '-' + d, close: close, y: +y, m: +m, d: +d });
+      }
+      // 原始 CSV 是新→旧，翻转为升序（旧→新）
+      rows.sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+      priceData = rows;
+      dateIndex = new Map();
+      rows.forEach(function (r, idx) { dateIndex.set(r.date, idx); });
+    }
+
+    function buildDateTree() {
+      dateTree = {};
+      priceData.forEach(function (r) {
+        const yKey = String(r.y);
+        const mKey = String(r.m).padStart(2, '0');
+        if (!dateTree[yKey]) dateTree[yKey] = {};
+        if (!dateTree[yKey][mKey]) dateTree[yKey][mKey] = [];
+        dateTree[yKey][mKey].push({ day: r.d, date: r.date });
+      });
+    }
+
+    // ─────────────────────────────────────────────
+    // 3. 年 → 月 → 日 选择器
+    // ─────────────────────────────────────────────
+    let pickerLevel = 'year'; // year | month | day
+    let pickerYear = null;
+    let pickerMonth = null;
+
+    datePickerBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (pickerPanel.classList.contains('hidden')) {
+        openPicker();
+      } else {
+        closePicker();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (pickerPanel.contains(e.target) && e.target !== datePickerBtn) {
+        closePicker();
+      }
+      // if (e.target !== pickerPanel || e.target !== datePickerBtn) {
+      //   console.log(e.target)
+      //   closePicker();
+      // }
+    });
+
+    function openPicker() {
+      pickerLevel = 'year';
+      pickerYear = null;
+      pickerMonth = null;
+      pickerPanel.classList.remove('hidden');
+      renderPicker();
+    }
+    function closePicker() {
+      pickerPanel.classList.add('hidden');
+    }
+
+    function renderPicker() {
+      // breadcrumb
+      let bc = '<span class="crumb' + (pickerLevel === 'year' ? ' current' : '') + '" data-level="year">年份</span>';
+      if (pickerYear) {
+        bc += '<span class="sep">/</span><span class="crumb' + (pickerLevel === 'month' ? ' current' : '') + '" data-level="month">' + pickerYear + '</span>';
+      }
+      if (pickerMonth) {
+        bc += '<span class="sep">/</span><span class="crumb current" data-level="day">' + pickerMonth + '</span>';
+      }
+      pickerBreadcrumb.innerHTML = bc;
+      pickerBreadcrumb.querySelectorAll('.crumb').forEach(function (el) {
+        el.addEventListener('click', function () {
+          const lvl = el.getAttribute('data-level');
+          if (lvl === 'year') { pickerLevel = 'year'; pickerYear = null; pickerMonth = null; }
+          else if (lvl === 'month') { pickerLevel = 'month'; pickerMonth = null; }
+          renderPicker();
+        });
+      });
+
+      // grid
+      pickerGrid.innerHTML = '';
+      if (pickerLevel === 'year') {
+        console.log(pickerLevel)
+        Object.keys(dateTree).sort().forEach(function (y) {
+          const btn = document.createElement('button');
+          btn.textContent = y;
+          if (y === pickerYear) btn.classList.add('active');
+          btn.addEventListener('click', function () {
+            pickerYear = y; pickerLevel = 'month'; renderPicker();
+          });
+          pickerGrid.appendChild(btn);
+        });
+      } else if (pickerLevel === 'month') {
+        console.log(pickerLevel)
+        Object.keys(dateTree[pickerYear]).sort().forEach(function (m) {
+          const btn = document.createElement('button');
+          btn.textContent = m + '月';
+          if (m === pickerMonth) btn.classList.add('active');
+          btn.addEventListener('click', function () {
+            pickerMonth = m; pickerLevel = 'day'; renderPicker();
+          });
+          pickerGrid.appendChild(btn);
+        });
+      } else if (pickerLevel === 'day') {
+        const days = dateTree[pickerYear][pickerMonth].slice().sort(function (a, b) { return a.day - b.day; });
+        days.forEach(function (d) {
+          const btn = document.createElement('button');
+          btn.textContent = String(d.day).padStart(2, '0');
+          if (d.date === selectedDate) btn.classList.add('active');
+          btn.addEventListener('click', function () {
+            selectedDate = d.date;
+            datePickerBtn.textContent = selectedDate;
+            closePicker();
+            recompute();
+          });
+          pickerGrid.appendChild(btn);
+        });
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // 4. 定投计算
+    // ─────────────────────────────────────────────
+    amountInput.addEventListener('input', function () { recompute(); });
+
+    function recompute() {
+      if (selectedDate === null || priceData.length === 0) return;
+      const amount = parseFloat(amountInput.value);
+      if (!amount || amount <= 0) {
+        renderEmpty('请输入大于 0 的定投金额');
+        return;
+      }
+      const startIdx = dateIndex.get(selectedDate);
+      if (startIdx === undefined) return;
+
+      let shares = 0, invested = 0;
+      const series = [];
+      for (let i = startIdx; i < priceData.length; i++) {
+        const row = priceData[i];
+        shares += amount / row.close;
+        invested += amount;
+        const value = shares * row.close;
+        const ret = (value - invested) / invested;
+        series.push({
+          date: row.date,
+          close: row.close,
+          invested: invested,
+          value: value,
+          ret: ret,
+          shares: shares
+        });
+      }
+
+      updateSummary(series);
+      updateChart(series);
+    }
+
+    function updateSummary(series) {
+      const last = series[series.length - 1];
+      const invEl = document.getElementById('statInvested');
+      const valEl = document.getElementById('statValue');
+      const retEl = document.getElementById('statReturn');
+      const retAbsEl = document.getElementById('statReturnAbs');
+      const cntEl = document.getElementById('statCount');
+      const rangeEl = document.getElementById('statRange');
+
+      invEl.textContent = fmtMoney.format(last.invested);
+      valEl.textContent = fmtMoney.format(last.value);
+
+      const cls = last.ret > 0 ? 'pos' : (last.ret < 0 ? 'neg' : 'neutral');
+      retEl.textContent = fmtPct(last.ret);
+      retEl.className = 'v ' + cls;
+      valEl.className = 'v ' + cls;
+      retAbsEl.textContent = (last.value - last.invested >= 0 ? '+' : '') + fmtMoney.format(last.value - last.invested) + ' 浮盈';
+
+      cntEl.textContent = series.length + ' 次';
+      rangeEl.textContent = series[0].date + ' → ' + series[series.length - 1].date;
+    }
+
+    // ─────────────────────────────────────────────
+    // 5. ECharts 图表
+    // ─────────────────────────────────────────────
+    function initChart() {
+      chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+      window.addEventListener('resize', function () { chart.resize(); });
+    }
+
+    function updateChart(series) {
+      emptyState.style.display = 'none';
+      chartDom.style.display = 'block';
+
+      const dates = series.map(function (s) { return s.date; });
+      const retData = series.map(function (s) { return +(s.ret * 100).toFixed(3); });
+
+      const option = {
+        backgroundColor: 'transparent',
+        textStyle: { fontFamily: "'IBM Plex Mono', monospace" },
+        grid: { left: 56, right: 24, top: 20, bottom: 64 },
+        xAxis: {
+          type: 'category',
+          data: dates,
+          boundaryGap: false,
+          axisLine: { lineStyle: { color: '#24272E' } },
+          axisTick: { show: false },
+          axisLabel: { color: '#565B64', fontSize: 10 },
+          splitLine: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: {
+            color: '#565B64', fontSize: 10,
+            formatter: function (v) { return v + '%'; }
+          },
+          splitLine: { lineStyle: { color: '#1A1D22' } },
+          axisLine: { show: false },
+          axisTick: { show: false }
+        },
+        dataZoom: [
+          { type: 'inside', start: 0, end: 100 },
+          {
+            type: 'slider', start: 0, end: 100, height: 18, bottom: 12,
+            borderColor: '#24272E', backgroundColor: '#0E1013',
+            fillerColor: 'rgba(255,159,28,0.12)',
+            handleStyle: { color: '#FF9F1C', borderColor: '#FF9F1C' },
+            textStyle: { color: '#565B64', fontSize: 9 },
+            moveHandleStyle: { color: '#3A3F48' }
+          }
+        ],
+        series: [
+          {
+            name: '累计收益率',
+            type: 'line',
+            data: retData,
+            symbol: 'none',
+            smooth: false,
+            lineStyle: { color: '#FF9F1C', width: 1.6 },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(255,159,28,0.28)' },
+                { offset: 1, color: 'rgba(255,159,28,0.02)' }
+              ])
+            },
+            markLine: {
+              silent: true,
+              symbol: 'none',
+              lineStyle: { color: '#3A3F48', type: 'dashed', width: 1 },
+              label: { show: false },
+              data: [{ yAxis: 0 }]
+            }
+          }
+        ],
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: '#1A1D22',
+          borderColor: '#3A3F48',
+          borderWidth: 1,
+          padding: 12,
+          textStyle: { color: '#E7E4DD', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
+          axisPointer: {
+            type: 'line',
+            lineStyle: { color: '#565B64', type: 'dashed' }
+          },
+          formatter: function (params) {
+            const p = params[0];
+            const s = series[p.dataIndex];
+            const retColor = s.ret >= 0 ? '#3ED990' : '#FF5C6C';
+            return [
+              '<div style="font-size:11px;color:#8D929B;margin-bottom:6px;">' + s.date + '</div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收益率</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">累计投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">当期收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>'
+            ].join('');
+          }
+        }
+      };
+
+      chart.setOption(option, true);
+    }
+
+    function renderEmpty(msg) {
+      chartDom.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyState.innerHTML = '<b>无法计算</b>' + msg;
+    }
+
+    ;
+  </script>
+</body>
+
+</html>
