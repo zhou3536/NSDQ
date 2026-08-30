@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <title>纳指回测终端</title>
   <link href="a.css" rel="stylesheet">
-  <script src="echarts.min.js"></script>
 </head>
 
 <body>
@@ -32,8 +31,6 @@
         <label>每周定投金额</label>
         <input type="number" class="term-input" id="amountInput" value="100" min="1" step="100">
       </div>
-
-      <div class="freq-badge">每周</b></div>
     </div>
 
     <div class="summary" id="summaryEl">
@@ -71,13 +68,10 @@
     </div>
 
   </div>
-
+  <script src="echarts.min.js"></script>
   <script>
 
-
-    // ─────────────────────────────────────────────
     // 1. 状态
-    // ─────────────────────────────────────────────
     let priceData = [];        // [{date:'2025-01-05', close: 507.19}] 升序
     let dateIndex = new Map(); // date -> index in priceData
     let dateTree = {};        // {year: {month: [ {day, date} ]}}

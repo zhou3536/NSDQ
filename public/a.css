@@ -7,7 +7,7 @@
     --border-bright: #3A3F48;
     --text-primary: #E7E4DD;
     --text-secondary: #8D929B;
-    --text-dim: #565B64;
+    --text-dim: #e4e4e4;
     --amber: #FF9F1C;
     --amber-dim: #7A5116;
     --green: #3ED990;
@@ -122,7 +122,7 @@ body {
 
 .field label {
     display: block;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-dim);
     letter-spacing: .09em;
     text-transform: uppercase;
@@ -328,16 +328,16 @@ input.term-input {
 }
 
 .chart-panel-head h2 {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-dim);
     letter-spacing: .06em;
     text-transform: uppercase;
     margin: 0;
 }
 
 .legend-note {
-    font-size: 11px;
+    font-size: 14px;
     color: var(--text-dim);
 }
 
