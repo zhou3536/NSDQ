@@ -36,7 +36,7 @@ async function getData(code) {
             interval: '1wk',          // '1d' (日线), '1wk' (周线), '1mo' (月线)
         });
 
-        const quotes = result.quotes;
+        const quotes = result.quotes.filter(item => item.close !== 0);
         // console.log(quotes)
         // console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
         const aa = transformData(quotes);
@@ -66,8 +66,8 @@ app.listen(port, host, () => {
     getData('qqq');
     getData('spy');
 });
-cron.schedule('0 6 * * *', () => {
-    console.log('[cron] 美东时间 06:00 到达，开始执行定时任务...');
+cron.schedule('0 18 * * *', () => {
+    console.log('[cron] 美东时间 18:00，开始执行定时任务...');
     getData('qqq');
     getData('spy');
 }, {
