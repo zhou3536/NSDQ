@@ -28,7 +28,7 @@
       </div>
 
       <div class="field">
-        <label>每周定投金额</label>
+        <label>每日定投金额</label>
         <input type="number" class="term-input" id="amountInput" value="100" min="1" step="100">
       </div>
     </div>
@@ -64,7 +64,7 @@
     </div>
 
     <div class="footnote">
-      数据说明：价格取自每周收盘价，按周定投模拟，收益率为价格收益，未计入分红，仅供个人回测参考。
+      数据说明：价格取自每日收盘价，按日定投模拟，收益率为价格收益，未计入分红，仅供个人回测参考。
     </div>
 
   </div>
@@ -118,7 +118,7 @@
           if (priceData.length === 0) throw new Error('JSON 中没有可用数据');
           buildDateTree();
           statusEl.classList.remove('err');
-          statusText.textContent = '数据已加载 · ' + priceData.length + ' 个交易周';
+          statusText.textContent = '数据已加载 · ' + priceData.length + ' 个交易日';
           selectedDate = priceData[0].date; // 默认取最早日期，展示全区间
           datePickerBtn.textContent = selectedDate;
           initChart();

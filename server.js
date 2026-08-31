@@ -33,10 +33,10 @@ async function getData(code) {
         const result = await yahooFinance.chart(code, {
             period1: '2000-01-07',   // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
             // period2: '2026-01-01',// 结束日期 (默认到最新)
-            interval: '1wk',          // '1d' (日线), '1wk' (周线), '1mo' (月线)
+            interval: '1d',          // '1d' (日线), '1wk' (周线), '1mo' (月线)
         });
 
-        const quotes = result.quotes.filter(item => item.close !== 0);
+        const quotes = result.quotes.filter(item => item.close);
         // console.log(quotes)
         // console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
         const aa = transformData(quotes);
