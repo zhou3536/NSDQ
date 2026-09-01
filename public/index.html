@@ -118,7 +118,7 @@
           if (priceData.length === 0) throw new Error('JSON 中没有可用数据');
           buildDateTree();
           statusEl.classList.remove('err');
-          statusText.textContent = '数据已加载 · ' + priceData.length + ' 个交易日';
+          statusText.textContent = '数据更新至 · ' + priceData[priceData.length -1].date;
           selectedDate = priceData[0].date; // 默认取最早日期，展示全区间
           datePickerBtn.textContent = selectedDate;
           initChart();
@@ -413,8 +413,8 @@
               '<div style="font-size:11px;color:#8D929B;margin-bottom:6px;">' + s.date + '</div>',
               '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收益率</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
               '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">累计投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">当期收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>'
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>'
             ].join('');
           }
         }
