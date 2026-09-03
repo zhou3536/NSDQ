@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>纳指回测终端</title>
+  <title>美股定投回测</title>
   <link href="a.css" rel="stylesheet">
 </head>
 
@@ -11,12 +11,13 @@
   <div class="shell">
 
     <div class="topbar">
-      <h1>纳指100 / 标普500 定投回测终端</h1>
+      <h1>纳指 / 标普 定投回测终端</h1>
 
       <div class="status" id="statusEl"><span class="dot"></span><span id="statusText">加载数据中</span></div>
     </div>
-    <span class="type type-active" onclick="btnClick('qqq',this)">纳指QQQ</span>
-    <span class="type" onclick="btnClick('spy',this)">标普SPY</span>
+    <span class="type type-active" onclick="btnClick('qqq',this)">QQQ</span>
+    <span class="type" onclick="btnClick('spy',this)">SPY</span>
+    <span class="type" onclick="btnClick('tqqq',this)">TQQQ</span>
     <div class="panel">
       <div class="field">
         <label>起始定投日期</label>
@@ -60,7 +61,7 @@
         <span class="legend-note">鼠标悬停查看当期详情 · 可拖动底部滑块缩放区间</span>
       </div>
       <div id="chart"></div>
-      <div id="emptyState" class="empty-state" style="display:none;"></div>
+      <div id="emptyState" class="empty-state">加载数据中...</div>
     </div>
 
     <div class="footnote">
@@ -97,6 +98,10 @@
       return (x >= 0 ? '+' : '') + s + '%';
     }
     function btnClick(text, elm) {
+      // chartDom.innerHTML = '';
+      chartDom.style.display = 'none';
+      emptyState.style.display = 'block';
+
       fetchCsv(text)
       const spans = document.querySelectorAll('.type');
 
@@ -128,7 +133,7 @@
           statusEl.classList.add('err');
           statusText.textContent = '数据加载失败';
           emptyState.style.display = 'block';
-          emptyState.innerHTML = `<b>无法加载 ${dataName}.json</b>请确认该文件与 index.html 位于同一目录，且通过本地/线上服务器访问（而非直接双击打开 file:// ）。<br>错误信息：` + err.message;
+          emptyState.innerHTML = `<b>无法加载 ${dataName}.json</b><br>错误信息：` + err.message;
         });
     }
     fetchCsv('qqq')
@@ -326,6 +331,7 @@
     // 5. ECharts 图表
     // ─────────────────────────────────────────────
     function initChart() {
+      chartDom.style.display = 'block';
       chart = echarts.init(chartDom, null, { renderer: 'canvas' });
       window.addEventListener('resize', function () { chart.resize(); });
     }

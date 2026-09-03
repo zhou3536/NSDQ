@@ -56,20 +56,23 @@ function transformData(rawData) {
         close: Math.round(Number(item.close) * 10000) / 10000
     }));
 }
-
+function getDatas() {
+    getData('qqq');
+    getData('spy');
+    getData('tqqq');
+}
 
 
 
 // --- 启动服务器 ---
 app.listen(port, host, () => {
     console.log(`Start HTTP server @ ${host}:${port}`);
-    getData('qqq');
-    getData('spy');
+    getDatas();
+
 });
 cron.schedule('0 18 * * *', () => {
     console.log('[cron] 美东时间 18:00，开始执行定时任务...');
-    getData('qqq');
-    getData('spy');
+    getDatas();
 }, {
     timezone: 'America/New_York',
 });
