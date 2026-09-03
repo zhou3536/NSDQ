@@ -22,7 +22,19 @@ app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: tenMin,
     etag: true,
 }));
-
+app.get('/code', async (req, res) => {
+    try {
+        const publicDir = path.join(__dirname, 'public');
+        const files = await fs.readdir(publicDir);
+        const jsonFiles = files
+            .filter(file => path.extname(file).toLowerCase() === '.json')
+            .map(file => path.parse(file).name);
+        res.json(jsonFiles);
+    } catch (err) {
+        console.error('读取 public 目录失败:', err);
+        res.status(500).json({ error: '读取文件失败或 public 目录不存在' });
+    }
+});
 
 
 

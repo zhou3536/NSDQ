@@ -11,13 +11,11 @@
   <div class="shell">
 
     <div class="topbar">
-      <h1>纳指 / 标普 定投回测终端</h1>
+      <h1>选择定投目标</h1>
 
-      <div class="status" id="statusEl"><span class="dot"></span><span id="statusText">加载数据中</span></div>
+      <div class="status" id="statusEl"><span class="dot"></span><span id="statusText">未选择目标</span></div>
     </div>
-    <span class="type type-active" onclick="btnClick('qqq',this)">QQQ</span>
-    <span class="type" onclick="btnClick('spy',this)">SPY</span>
-    <span class="type" onclick="btnClick('tqqq',this)">TQQQ</span>
+    <div id="CodeListBox"> </div>
     <div class="panel">
       <div class="field">
         <label>起始定投日期</label>
@@ -61,16 +59,16 @@
         <span class="legend-note">鼠标悬停查看当期详情 · 可拖动底部滑块缩放区间</span>
       </div>
       <div id="chart"></div>
-      <div id="emptyState" class="empty-state">加载数据中...</div>
+      <div id="emptyState" class="empty-state">请先选择定投目标</div>
     </div>
 
     <div class="footnote">
-      数据说明：价格取自每日收盘价，按日定投模拟，收益率为价格收益，未计入分红，仅供个人回测参考。
+      数据说明：价格取自每日收盘价，按日定投模拟，未计入分红，仅供个人回测参考。
     </div>
 
   </div>
   <script src="echarts.min.js"></script>
-  <script>
+  <script type="module">
 
     // 1. 状态
     let priceData = [];        // [{date:'2025-01-05', close: 507.19}] 升序
@@ -97,22 +95,12 @@
       const s = (x * 100).toFixed(2);
       return (x >= 0 ? '+' : '') + s + '%';
     }
-    function btnClick(text, elm) {
-      // chartDom.innerHTML = '';
-      chartDom.style.display = 'none';
-      emptyState.style.display = 'block';
 
-      fetchCsv(text)
-      const spans = document.querySelectorAll('.type');
-
-      spans.forEach(span => {
-        span.classList.toggle('type-active', span === elm)
-      });
-    }
     // ─────────────────────────────────────────────
     // 2. 加载 & 解析 JSON
     // ─────────────────────────────────────────────
     function fetchCsv(dataName) {
+      emptyState.textContent = '数据加载中...';
       fetch(`${dataName}.json`)
         .then(function (res) {
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -123,7 +111,7 @@
           if (priceData.length === 0) throw new Error('JSON 中没有可用数据');
           buildDateTree();
           statusEl.classList.remove('err');
-          statusText.textContent = '数据更新至 · ' + priceData[priceData.length -1].date;
+          statusText.textContent = '数据更新至 · ' + priceData.at(-1).date;
           selectedDate = priceData[0].date; // 默认取最早日期，展示全区间
           datePickerBtn.textContent = selectedDate;
           initChart();
@@ -136,7 +124,7 @@
           emptyState.innerHTML = `<b>无法加载 ${dataName}.json</b><br>错误信息：` + err.message;
         });
     }
-    fetchCsv('qqq')
+    // fetchCsv('qqq')
     function parseJson(json) {
       const rows = [];
       if (!Array.isArray(json)) { priceData = []; dateIndex = new Map(); return; }
@@ -415,12 +403,17 @@
             const p = params[0];
             const s = series[p.dataIndex];
             const retColor = s.ret >= 0 ? '#3ED990' : '#FF5C6C';
+            const priceRatio = s.close / series[0].close;
+            const priceRatioColor = priceRatio >= 1 ? '#3ED990' : '#FF5C6C';
             return [
               '<div style="font-size:11px;color:#8D929B;margin-bottom:6px;">' + s.date + '</div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收益率</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
               '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>'
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
+
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>',
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收益率</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
+
+              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总涨幅</span><b style="color:' + priceRatioColor + ';">' + fmtPct(priceRatio - 1) + '</b></div>',
             ].join('');
           }
         }
@@ -433,9 +426,49 @@
       chartDom.style.display = 'none';
       emptyState.style.display = 'block';
       emptyState.innerHTML = '<b>无法计算</b>' + msg;
+    };
+
+    async function getCodeList() {
+      try {
+        const response = await fetch('/code');
+        if (!response.ok) {
+          throw new Error(`HTTP 错误! 状态码: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('请求失败:', error);
+        return null;
+      }
     }
 
-    ;
+    const CodeList = await getCodeList() || null;
+    const box = document.getElementById('CodeListBox');
+
+    if (Array.isArray(CodeList) && CodeList.length > 0) {
+      box.innerHTML = '';
+      CodeList.forEach((code) => {
+        const s = document.createElement('span');
+        s.innerText = code.toUpperCase();
+        s.classList.add('code');
+        s.addEventListener('click', () => {
+          chartDom.style.display = 'none';
+          emptyState.style.display = 'block';
+          fetchCsv(code)
+          const spans = box.querySelectorAll('.code');
+          spans.forEach(span => {
+            span.classList.toggle('code-active', span === s)
+          });
+        })
+        box.appendChild(s);
+      })
+
+    } else {
+      const h = document.createElement('h3');
+      h.style.color = '#8a4444';
+      h.innerText = '数据获取失败';
+      box.appendChild(h);
+    }
   </script>
 </body>
 
