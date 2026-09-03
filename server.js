@@ -15,7 +15,7 @@ const app = express();
 const port = 4001;
 const host = '127.0.0.1';
 
-
+let CodeData = null;
 // 静态文件服务
 const tenMin = 10 * 60 * 1000;
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -23,19 +23,20 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: true,
 }));
 app.get('/code', async (req, res) => {
+    res.json(CodeData);
+});
+
+async function getCodeList() {
     try {
         const publicDir = path.join(__dirname, 'public');
         const files = await fs.readdir(publicDir);
-        const jsonFiles = files
+        CodeData = files
             .filter(file => path.extname(file).toLowerCase() === '.json')
             .map(file => path.parse(file).name);
-        res.json(jsonFiles);
     } catch (err) {
         console.error('读取 public 目录失败:', err);
-        res.status(500).json({ error: '读取文件失败或 public 目录不存在' });
     }
-});
-
+}
 
 
 const yahooFinance = new YahooFinance();
@@ -68,10 +69,17 @@ function transformData(rawData) {
         close: Math.round(Number(item.close) * 10000) / 10000
     }));
 }
-function getDatas() {
-    getData('qqq');
-    getData('spy');
-    getData('tqqq');
+async function getDatas() {
+    try {
+        await Promise.allSettled([
+            getData('qqq'),
+            getData('spy'),
+            getData('tqqq')
+        ]);
+    } finally {
+        console.log('执行完毕');
+        getCodeList();
+    }
 }
 
 
