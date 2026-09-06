@@ -6,23 +6,32 @@ import { fileURLToPath } from 'url';
 import YahooFinance from 'yahoo-finance2';
 import fs from 'fs/promises';
 import cron from 'node-cron';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // __dirname 在 ES Module 中不可用，需要手动创建
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = 4001;
-const host = '127.0.0.1';
+const host = process.env.HOST || '127.0.0.1';
+const port = process.env.PORT || 3000;
+const CacheControl = process.env.CacheControl * 1000;
 
 let CodeData = null;
 // 静态文件服务
-const tenMin = 10 * 60 * 1000;
+app.use('/st', express.static(path.join(__dirname, 'public', 'st'), {
+    maxAge: '30d',
+    etag: true,
+}));
 app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: tenMin,
+    maxAge: CacheControl,
     etag: true,
 }));
 app.get('/code', async (req, res) => {
+    res.set({
+        'Cache-Control': 'no-store',
+    });
     res.json(CodeData);
 });
 

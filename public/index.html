@@ -3,6 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <title>美股定投回测</title>
   <link href="a.css" rel="stylesheet">
 </head>
@@ -32,42 +34,42 @@
       </div>
     </div>
 
-    <div class="summary" id="summaryEl">
-      <div class="stat">
-        <div class="k">累计投入</div>
-        <div class="v neutral" id="statInvested">—</div>
-      </div>
-      <div class="stat">
-        <div class="k">当前市值</div>
-        <div class="v neutral" id="statValue">—</div>
-      </div>
-      <div class="stat">
-        <div class="k">总收益率</div>
-        <div class="v neutral" id="statReturn">—</div>
-        <div class="sub" id="statReturnAbs"></div>
-      </div>
-      <div class="stat">
-        <div class="k">定投次数</div>
-        <div class="v neutral" id="statCount">—</div>
-        <div class="sub" id="statRange"></div>
-      </div>
-    </div>
 
-    <div class="chart-panel">
+    <div class="chart-panel" id="chart-panel">
+
+      <div class="summary" id="summaryEl">
+        <div class="stat">
+          <div class="k">累计投入</div>
+          <div class="v neutral" id="statInvested">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">当前市值</div>
+          <div class="v neutral" id="statValue">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">浮盈</div>
+          <div class="v neutral" id="statReturnAbs">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">总收益率</div>
+          <div class="v neutral" id="statReturn">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">定投次数</div>
+          <div class="v neutral" id="statCount">—</div>
+        </div>
+      </div>
       <div class="chart-panel-head">
-        <h2>累计收益率走势</h2>
-        <span class="legend-note">鼠标悬停查看当期详情 · 可拖动底部滑块缩放区间</span>
+        <h2>累计收益率走势 <span id="fsBtn">全屏</span></h2>
       </div>
       <div id="chart"></div>
-      <div id="emptyState" class="empty-state">请先选择定投目标</div>
+      <div id="emptyState" class="empty-state">
+        请先选择定投目标
+         <!-- <img src="loading.gif" alt=""> -->
+      </div>
     </div>
-
-    <div class="footnote">
-      数据说明：价格取自每日收盘价，按日定投模拟，未计入分红，仅供个人回测参考。
-    </div>
-
   </div>
-  <script src="echarts.min.js"></script>
+  <script src="st/echarts.min.js"></script>
   <script type="module">
 
     // 1. 状态
@@ -100,7 +102,8 @@
     // 2. 加载 & 解析 JSON
     // ─────────────────────────────────────────────
     function fetchCsv(dataName) {
-      emptyState.textContent = '数据加载中...';
+      const el = '<img src="loading.gif" alt="">'
+      emptyState.innerHTML = el;
       fetch(`${dataName}.json`)
         .then(function (res) {
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -175,14 +178,12 @@
       }
     });
 
+
     document.addEventListener('click', function (e) {
-      if (pickerPanel.contains(e.target) && e.target !== datePickerBtn) {
-        closePicker();
-      }
-      // if (e.target !== pickerPanel || e.target !== datePickerBtn) {
-      //   console.log(e.target)
-      //   closePicker();
-      // }
+      const path = e.composedPath();
+      const isInsidePicker = path.includes(pickerPanel);
+      const isBtn = path.includes(datePickerBtn);
+      if (!isInsidePicker && !isBtn) closePicker();
     });
 
     function openPicker() {
@@ -300,7 +301,7 @@
       const retEl = document.getElementById('statReturn');
       const retAbsEl = document.getElementById('statReturnAbs');
       const cntEl = document.getElementById('statCount');
-      const rangeEl = document.getElementById('statRange');
+      // const rangeEl = document.getElementById('statRange');
 
       invEl.textContent = fmtMoney.format(last.invested);
       valEl.textContent = fmtMoney.format(last.value);
@@ -310,9 +311,9 @@
       retEl.className = 'v ' + cls;
       valEl.className = 'v ' + cls;
       retAbsEl.textContent = (last.value - last.invested >= 0 ? '+' : '') + fmtMoney.format(last.value - last.invested);
-      retAbsEl.className = 'sub ' + cls;
-      cntEl.textContent = series.length + ' 次';
-      rangeEl.textContent = series[0].date + ' → ' + series[series.length - 1].date;
+      retAbsEl.className = 'v ' + cls;
+      cntEl.textContent = series.length;
+      // rangeEl.textContent = series[0].date + ' → ' + series[series.length - 1].date;
     }
 
     // ─────────────────────────────────────────────
@@ -350,7 +351,7 @@
             color: '#565B64', fontSize: 10,
             formatter: function (v) { return v + '%'; }
           },
-          splitLine: { lineStyle: { color: '#1A1D22' } },
+          splitLine: { lineStyle: { color: '#ddd' } },
           axisLine: { show: false },
           axisTick: { show: false }
         },
@@ -358,11 +359,11 @@
           { type: 'inside', start: 0, end: 100 },
           {
             type: 'slider', start: 0, end: 100, height: 18, bottom: 12,
-            borderColor: '#24272E', backgroundColor: '#0E1013',
-            fillerColor: 'rgba(255,159,28,0.12)',
+            borderColor: '#24272E', backgroundColor: '#fff',
+            fillerColor: 'rgba(255,159,28,0.3)',
             handleStyle: { color: '#FF9F1C', borderColor: '#FF9F1C' },
             textStyle: { color: '#565B64', fontSize: 9 },
-            moveHandleStyle: { color: '#3A3F48' }
+            moveHandleStyle: { color: '#aaa' }
           }
         ],
         series: [
@@ -382,7 +383,7 @@
             markLine: {
               silent: true,
               symbol: 'none',
-              lineStyle: { color: '#3A3F48', type: 'dashed', width: 1 },
+              lineStyle: { color: '#ccc', type: 'dashed', width: 1 },
               label: { show: false },
               data: [{ yAxis: 0 }]
             }
@@ -390,11 +391,11 @@
         ],
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#1A1D22',
-          borderColor: '#3A3F48',
+          backgroundColor: '#fff',
+          borderColor: '#bbb',
           borderWidth: 1,
           padding: 12,
-          textStyle: { color: '#E7E4DD', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
+          textStyle: { color: '#222', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
           axisPointer: {
             type: 'line',
             lineStyle: { color: '#565B64', type: 'dashed' }
@@ -402,11 +403,13 @@
           formatter: function (params) {
             const p = params[0];
             const s = series[p.dataIndex];
-            const retColor = s.ret >= 0 ? '#3ED990' : '#FF5C6C';
+            const greed = '#00a357';
+            const red = '#b30214';
+            const retColor = s.ret >= 0 ? greed : red;
             const priceRatio = s.close / series[0].close;
-            const priceRatioColor = priceRatio >= 1 ? '#3ED990' : '#FF5C6C';
+            const priceRatioColor = priceRatio >= 1 ? greed : red;
             return [
-              '<div style="font-size:11px;color:#8D929B;margin-bottom:6px;">' + s.date + '</div>',
+              '<div style="font-size:12px;color:#222;margin-bottom:6px;">' + s.date + '</div>',
               '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
               '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
 
@@ -462,7 +465,8 @@
         })
         box.appendChild(s);
       })
-
+      const spans = box.querySelectorAll('.code');
+      if(spans.length > 0)spans[0].click();
     } else {
       const h = document.createElement('h3');
       h.style.color = '#8a4444';
@@ -470,6 +474,7 @@
       box.appendChild(h);
     }
   </script>
+  <script src="scipt.js"></script>
 </body>
 
 </html>
