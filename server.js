@@ -80,17 +80,15 @@ function transformData(rawData) {
 }
 async function getDatas() {
     try {
-        await Promise.allSettled([
-            getData('qqq'),
-            getData('spy'),
-            getData('tqqq')
-        ]);
+        const codeEnv = process.env.CODE || '';
+        const codes = codeEnv.trim().split(/\s+/).filter(Boolean);
+        const tasks = codes.map(code => getData(code));
+        await Promise.allSettled(tasks);
     } finally {
         console.log('执行完毕');
         getCodeList();
     }
 }
-
 
 
 // --- 启动服务器 ---

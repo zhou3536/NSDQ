@@ -30,7 +30,7 @@
 
       <div class="field">
         <label>每日定投金额</label>
-        <input type="number" class="term-input" id="amountInput" value="100" min="1" step="100">
+        <input type="number" class="term-input" id="amountInput" value="0" min="0" step="100">
       </div>
     </div>
 
@@ -65,7 +65,7 @@
       <div id="chart"></div>
       <div id="emptyState" class="empty-state">
         请先选择定投目标
-         <!-- <img src="loading.gif" alt=""> -->
+        <!-- <img src="loading.gif" alt=""> -->
       </div>
     </div>
   </div>
@@ -403,20 +403,23 @@
           formatter: function (params) {
             const p = params[0];
             const s = series[p.dataIndex];
-            const greed = '#00a357';
-            const red = '#b30214';
-            const retColor = s.ret >= 0 ? greed : red;
+            const green = 'var(--green)';
+            const red = 'var(--red)';
+            const retColor = s.ret >= 0 ? green : red;
             const priceRatio = s.close / series[0].close;
-            const priceRatioColor = priceRatio >= 1 ? greed : red;
+            const priceRatioColor = priceRatio >= 1 ? green : red;
+            const curIdx = dateIndex.get(s.date);
+            const prevClose = curIdx > 0 ? priceData[curIdx - 1].close : null;
+            const dailyRet = prevClose ? (s.close - prevClose) / prevClose : 0;
+            const dailyColor = dailyRet >= 0 ? green : red;
             return [
               '<div style="font-size:12px;color:#222;margin-bottom:6px;">' + s.date + '</div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
-
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>',
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">收益率</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
-
-              '<div style="display:flex;justify-content:space-between;gap:24px;"><span style="color:#565B64;">总涨幅</span><b style="color:' + priceRatioColor + ';">' + fmtPct(priceRatio - 1) + '</b></div>',
+              '<div class="fl"><span>总投入</span><b>' + fmtMoney.format(s.invested) + '</b></div>',
+              '<div class="fl"><span>总市值</span><b>' + fmtMoney.format(s.value) + '</b></div>',
+              '<div class="fl"><span>收盘价</span><b>' + fmtMoney2.format(s.close) + '</b></div>',
+              '<div class="fl"><span>日涨幅</span><b style="color:' + dailyColor + ';">' + (prevClose ? fmtPct(dailyRet) : '—') + '</b></div>',
+              '<div class="fl"><span>总涨幅</span><b style="color:' + priceRatioColor + ';">' + fmtPct(priceRatio - 1) + '</b></div>',
+              '<div class="fl"><span>浮盈</span><b style="color:' + retColor + ';">' + fmtPct(s.ret) + '</b></div>',
             ].join('');
           }
         }
@@ -466,7 +469,7 @@
         box.appendChild(s);
       })
       const spans = box.querySelectorAll('.code');
-      if(spans.length > 0)spans[0].click();
+      if (spans.length > 0) spans[0].click();
     } else {
       const h = document.createElement('h3');
       h.style.color = '#8a4444';
