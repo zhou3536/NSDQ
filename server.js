@@ -28,6 +28,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: CacheControl,
     etag: true,
 }));
+app.use(express.static(path.join(__dirname, 'data'), {
+    maxAge: CacheControl,
+    etag: true,
+}));
 app.get('/code', async (req, res) => {
     res.set({
         'Cache-Control': 'no-store',
@@ -35,15 +39,17 @@ app.get('/code', async (req, res) => {
     res.json(CodeData);
 });
 
+const dataDir = path.join(__dirname, 'data');
+await fs.mkdir(dataDir, { recursive: true });
+
 async function getCodeList() {
     try {
-        const publicDir = path.join(__dirname, 'public');
-        const files = await fs.readdir(publicDir);
+        const files = await fs.readdir(dataDir);
         CodeData = files
             .filter(file => path.extname(file).toLowerCase() === '.json')
             .map(file => path.parse(file).name);
     } catch (err) {
-        console.error('读取 public 目录失败:', err);
+        console.error(`读取目录${dataDir}失败:`, err);
     }
 }
 
@@ -60,10 +66,9 @@ async function getData(code) {
 
         const quotes = result.quotes.filter(item => item.close);
         // console.log(quotes)
-        // console.log(`成功获取到 ${quotes.length} 条数据，正在写入文件...`);
-        const aa = transformData(quotes);
-        const filePath = path.join(__dirname, 'public', `${code}.json`);
-        await fs.writeFile(filePath, JSON.stringify(aa, null, 2), 'utf-8');
+        const data = transformData(quotes);
+        const filePath = path.join(dataDir, `${code}.json`);
+        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 
         console.log(`✅ 数据已成功保存到: ${filePath}`);
         return true;
