@@ -128,7 +128,6 @@ body {
     display: block;
     font-size: 16px;
     color: var(--text-dim);
-    letter-spacing: .09em;
     text-transform: uppercase;
 }
 
@@ -337,15 +336,16 @@ input.term-input {
 }
 
 .chart-panel-head {
+    padding: 0 10px;
     display: flex;
-    justify-content: space-between;
+    gap: 8px;
     align-items: center;
     margin-bottom: 4px;
 }
 
 .chart-panel-head h2 {
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--text-dim);
     letter-spacing: .06em;
     text-transform: uppercase;
@@ -392,6 +392,7 @@ input.term-input {
     background-color: #ebfaff;
     font-weight: 600;
     margin-right: 8px;
+    user-select: none;
 }
 
 .code-active {
@@ -437,11 +438,13 @@ input.term-input {
     }
 }
 
-#fsBtn {
+.btn {
     background-color: #aee2e4;
-    padding: 0 3px;
-    border-radius: 3px;
+    padding: 3px 10px;
+    border-radius: 5px;
     cursor: pointer;
+    user-select: none;
+    font-size: 15px;
 }
 
 
@@ -453,4 +456,11 @@ input.term-input {
 
 .fl span {
     color: #303030;
+    font-size: 13px;
+}
+
+.fl-date {
+    font-size: 14px;
+    color: #222;
+    margin-bottom: 4px;
 }
