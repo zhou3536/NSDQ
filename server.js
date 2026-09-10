@@ -38,6 +38,24 @@ app.get('/code', async (req, res) => {
     });
     res.json(CodeData);
 });
+app.use(async (req, res, next) => {
+    const path = req.path;
+    if (!path.endsWith('.json')) return next();
+
+    const newPath = path.replace(/\.json$/, '').replace(/^\//, '');
+    const regex = /^[a-zA-Z]{1,5}$/;
+    if (!regex.test(newPath)) return next();
+
+    const data = await getData2(newPath)
+    if (Array.isArray(data) && data.length > 0) {
+        res.set({
+            'Cache-Control': 'max-age=1200',
+        });
+        return res.status(200).json(data);
+    } else {
+        return res.status(405).send('Not Found');
+    }
+});
 
 const dataDir = path.join(__dirname, 'data');
 await fs.mkdir(dataDir, { recursive: true });
@@ -77,6 +95,21 @@ async function getData(code) {
         return false;
     }
 }
+async function getData2(code) {
+    if (!code) return false;
+    try {
+        const result = await yahooFinance.chart(code, {
+            period1: '2000-01-01',
+            interval: '1d',
+        });
+        const quotes = result.quotes.filter(item => item.close);
+        const data = transformData(quotes);
+        return data;
+    } catch (error) {
+        console.error('❌ 获取数据失败:', code);
+        return false;
+    }
+}
 function transformData(rawData) {
     return rawData.map(item => ({
         date: item.date.toISOString().slice(0, 10),
@@ -102,8 +135,8 @@ app.listen(port, host, () => {
     getDatas();
 
 });
-cron.schedule('0 18 * * 1-5', () => {
-    console.log('[cron] 美东时间 18:00，开始执行定时任务...');
+cron.schedule('2 16 * * 1-5', () => {
+    console.log('[cron] 美东时间 16:00，开始执行定时任务...');
     getDatas();
 }, {
     timezone: 'America/New_York',

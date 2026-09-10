@@ -374,13 +374,21 @@ input.term-input {
 .empty-state b {
     color: var(--red);
     display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
 }
 
 #CodeListBox {
     min-height: 32px;
     margin: 15px 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#CodeListBox input {
+    min-width: 0;
+    width: 70px;
+    border-radius: 5px;
+    padding: 6px
 }
 
 .code {
@@ -391,7 +399,7 @@ input.term-input {
     cursor: pointer;
     background-color: #ebfaff;
     font-weight: 600;
-    margin-right: 8px;
+    /* margin-right: 8px; */
     user-select: none;
 }
 
