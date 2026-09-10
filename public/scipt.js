@@ -594,7 +594,7 @@ DOM.okBtn.addEventListener('click', () => {
 
 window.addEventListener('hashchange', hashchange);
 async function hashchange() {
-    const code = window.location.hash.substring(1);
+    let code = window.location.hash.substring(1);
     const els = DOM.codeListBox.querySelectorAll('.code')
     if (!code) code = els[0].innerText;
     activeCode = code.toUpperCase();
