@@ -2,6 +2,7 @@
 // 1. DOM 缓存与全局状态管理
 // ─────────────────────────────────────────────
 const DOM = {
+    csh: document.getElementById('csh'),
     statusEl: document.getElementById('statusEl'),
     statusText: document.getElementById('statusText'),
     datePickerBtn: document.getElementById('datePickerBtn'),
@@ -41,6 +42,8 @@ let chartInstance = null;
 let activeCode = '';
 let currentAbortController = null;
 let statusA = true;
+let STORAGE_KEY = 'history_code';
+let hst = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
 // 格式化工具单例
 const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
@@ -55,7 +58,14 @@ function debounce(fn, delay = 200) {
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
 }
-
+function addHistory(text) {
+    if (!text) return;
+    const existingIndex = hst.indexOf(text);
+    if (existingIndex !== -1) hst.splice(existingIndex, 1);
+    hst.push(text);
+    if (hst.length > 8) hst.shift();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(hst));
+}
 // ─────────────────────────────────────────────
 // 2. 数据请求与解析（含 AbortController 防竞态）
 // ─────────────────────────────────────────────
@@ -71,7 +81,7 @@ async function fetchStockData(dataName) {
     DOM.chartDom.style.display = 'none';
 
     try {
-        const res = await fetch(`${dataName}.json`, { signal: currentAbortController.signal });
+        const res = await fetch(`${dataName.toLowerCase()}.json`, { signal: currentAbortController.signal });
         if (!res.ok) throw new Error(`HTTP 错误: ${res.status}`);
         const json = await res.json();
 
@@ -88,6 +98,17 @@ async function fetchStockData(dataName) {
 
         initChart();
         recompute();
+
+        const els = DOM.codeListBox.querySelectorAll('.code');
+        const hasMatch = Array.from(els).some(
+            el => el.textContent.trim().toLowerCase() === dataName.toLowerCase()
+        );
+        if (!hasMatch) {
+            const span = createElementSpan(dataName);
+            span.classList.add('code-active');
+            DOM.codeListBox.appendChild(span);
+            addHistory(dataName);
+        };
     } catch (err) {
         if (err.name === 'AbortError') return; // 用户切换新标的主动取消，忽略报错
         DOM.statusEl.classList.add('err');
@@ -538,51 +559,51 @@ async function initStockList() {
         const response = await fetch('/code');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const codeList = await response.json();
-
-        if (Array.isArray(codeList) && codeList.length > 0) {
+        codeList.push(...hst);
+        if (codeList.length > 0) {
             DOM.codeListBox.innerHTML = '';
             const frag = document.createDocumentFragment();
 
             codeList.forEach((code) => {
-                const span = document.createElement('span');
-                span.textContent = code.toUpperCase();
-                span.classList.add('code');
-                span.onclick = () => {
-                    window.location.hash = code;
-                };
+                const span = createElementSpan(code);
                 frag.appendChild(span);
             });
 
             DOM.codeListBox.appendChild(frag);
             hashchange();
         }
-    } finally {
-        const frag = document.createDocumentFragment();
-        const input = document.createElement('input');
-        input.classList.add('term-input');
-        input.placeholder = '美股代码';
-        input.addEventListener('input', (e) => {
-            const start = input.selectionStart;
-            const end = input.selectionEnd;
-            const value = input.value;
-            const newValue = value.replace(/[^A-Za-z]/g, '').toUpperCase();
-            if (value !== newValue) {
-                input.value = newValue;
-                input.setSelectionRange(start, end);
-            }
-        });
-        const span = document.createElement('span');
-        span.classList.add('code');
-        span.innerText = '搜索';
-        span.addEventListener('click', () => { if (input.value) window.location.hash = input.value })
-        frag.appendChild(input);
-        frag.appendChild(span);
-        DOM.codeListBox.appendChild(frag);
+    } catch (err) {
+        DOM.codeListBox.innerHTML = '<h3 style="color:#ef4444;">标的获取失败</h3>'
+        console.log(err.message);
     }
 }
-
+function createElementSpan(code) {
+    const span = document.createElement('span');
+    span.textContent = code.toUpperCase();
+    span.classList.add('code');
+    span.onclick = () => {
+        window.location.hash = code.toLowerCase();
+    };
+    return span;
+}
 initStockList();
-
+DOM.csh.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && DOM.csh.value) {
+        window.location.hash = DOM.csh.value.toLowerCase();
+    }
+});
+DOM.csh.addEventListener('input', (e) => {
+    const start = DOM.csh.selectionStart;
+    const end = DOM.csh.selectionEnd;
+    const value = DOM.csh.value;
+    const newValue = value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 5);
+    if (value !== newValue) {
+        DOM.csh.value = newValue;
+        const newStart = Math.min(start, newValue.length);
+        const newEnd = Math.min(end, newValue.length);
+        DOM.csh.setSelectionRange(newStart, newEnd);
+    }
+});
 DOM.swBtn.addEventListener('click', () => {
     statusA = !statusA;
     recompute();
@@ -596,9 +617,9 @@ window.addEventListener('hashchange', hashchange);
 async function hashchange() {
     let code = window.location.hash.substring(1);
     const els = DOM.codeListBox.querySelectorAll('.code')
-    if (!code) code = els[0].innerText;
+    if (!code) code = els[0].textContent;
     activeCode = code.toUpperCase();
-    els.forEach(el => el.classList.toggle('code-active', el.innerText.toUpperCase() === activeCode));
+    els.forEach(el => el.classList.toggle('code-active', el.textContent.toUpperCase() === activeCode));
     fetchStockData(code);
 }
 

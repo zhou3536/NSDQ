@@ -3,6 +3,7 @@
     --bg-panel: #ffffff;
     --bg-panel-2: #f0f0f0;
     --bg-input: #f8f8f8;
+    --bg-btn: #aee2e4;
     --border: #b4b8c0;
     --border-bright: #adb8cc;
     --text-primary: #030303;
@@ -59,6 +60,16 @@ body {
 
 .topbar h1 span {
     color: var(--amber);
+}
+
+.SearchArea {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#csh {
+    width: 100px;
 }
 
 .status {
@@ -136,8 +147,8 @@ body {
     border: 1px solid var(--border-bright);
     color: var(--text-primary);
     font-size: 14px;
-    padding: 8px 12px;
-    border-radius: 2px;
+    padding: 6px 6px;
+    border-radius: 6px;
     outline: none;
     min-width: 100px;
     text-align: left;
@@ -447,7 +458,7 @@ input.term-input {
 }
 
 .btn {
-    background-color: #aee2e4;
+    background-color: var(--bg-btn);
     padding: 3px 10px;
     border-radius: 5px;
     cursor: pointer;
