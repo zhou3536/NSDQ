@@ -5,42 +5,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>美股定投回测</title>
-  <link href="a.css" rel="stylesheet">
+  <link href="sty.css" rel="stylesheet">
 </head>
 
 <body>
   <div class="shell">
     <div class="topbar">
-      <div class="SearchArea">
-        <h1>选择定投目标</h1>
-        <input type="text" id="csh" class="term-input" placeholder = '搜索美股代码'>
-      </div>
+      <a href="/">
+        <h1>NASDAQ</h1>
+      </a>
       <div class="status" id="statusEl">
         <span class="dot"></span>
         <span id="statusText">未选择目标</span>
       </div>
     </div>
-
-    <div id="CodeListBox"></div>
-
-    <div class="panel">
-      <div class="field">
-        <label>起始定投日期</label>
-        <button type="button" class="term-input" id="datePickerBtn">—</button>
-        <div class="picker-panel hidden" id="pickerPanel">
-          <div class="picker-breadcrumb" id="pickerBreadcrumb"></div>
-          <div class="picker-grid" id="pickerGrid"></div>
-        </div>
+    <div class="SearchArea">
+      <div class="sh-input">
+        <input type="text" id="csh" placeholder='美股代码'>
+        <span id="shBtn">搜索</span>
       </div>
 
-      <div class="field">
-        <label>每日定投金额</label>
-        <input type="number" class="term-input" id="amountInput" value="10" min="0" step="100">
-        <span class="btn" id="okBtn">计算</span>
+      <div id="CodeListBox">
       </div>
     </div>
 
+
+
     <div class="chart-panel" id="chart-panel">
+      <div class="panel">
+        <div class="field">
+          <label>起始定投日期</label>
+          <button type="button" class="term-input" id="datePickerBtn">—</button>
+          <div class="picker-panel hidden" id="pickerPanel">
+            <div class="picker-breadcrumb" id="pickerBreadcrumb"></div>
+            <div class="picker-grid" id="pickerGrid"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>每日定投金额</label>
+          <input type="number" class="term-input" id="amountInput" value="10" min="0" step="100">
+          <span class="btn" id="okBtn">计算</span>
+        </div>
+      </div>
       <div class="summary" id="summaryEl">
         <div class="stat">
           <div class="k" id="labelInvested">累计投入</div>

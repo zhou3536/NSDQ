@@ -18,6 +18,7 @@ const DOM = {
     okBtn: document.getElementById('okBtn'),
     swBtn: document.getElementById('swBtn'),
     fsBtn: document.getElementById('fsBtn'),
+    shBtn: document.getElementById('shBtn'),
     labels: {
         invested: document.getElementById('labelInvested'),
         value: document.getElementById('labelValue'),
@@ -44,6 +45,7 @@ let currentAbortController = null;
 let statusA = true;
 let STORAGE_KEY = 'history_code';
 let hst = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+// console.log(hst)
 
 // 格式化工具单例
 const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
@@ -63,7 +65,7 @@ function addHistory(text) {
     const existingIndex = hst.indexOf(text);
     if (existingIndex !== -1) hst.splice(existingIndex, 1);
     hst.push(text);
-    if (hst.length > 8) hst.shift();
+    if (hst.length > 5) hst.shift();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(hst));
 }
 // ─────────────────────────────────────────────
@@ -104,7 +106,10 @@ async function fetchStockData(dataName) {
             el => el.textContent.trim().toLowerCase() === dataName.toLowerCase()
         );
         if (!hasMatch) {
-            const span = createElementSpan(dataName);
+            const els = DOM.codeListBox.querySelectorAll('[data-cashe="true"]');
+            if (els.length > 4) els[0].remove();
+            const span = createElementA(dataName);
+            span.dataset.cashe = true;
             span.classList.add('code-active');
             DOM.codeListBox.appendChild(span);
             addHistory(dataName);
@@ -534,8 +539,8 @@ function updateChart(series) {
               <div class="fl"><span>收盘价</span><b>$${fmtMoney2.format(s.close)}</b></div>
               <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
               <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
-              <div class="fl"><span>总投入</span><b>${fmtMoney.format(s.invested)}</b></div>
-              <div class="fl"><span>总市值</span><b>${fmtMoney.format(s.value)}</b></div>
+              <div class="fl"><span>投入</span><b>${fmtMoney.format(s.invested)}</b></div>
+              <div class="fl"><span>市值</span><b>${fmtMoney.format(s.value)}</b></div>
               <div class="fl"><span>浮盈</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
               <div class="fl"><span></span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
             `;
@@ -559,13 +564,15 @@ async function initStockList() {
         const response = await fetch('/code');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const codeList = await response.json();
+        const i = codeList.length;
         codeList.push(...hst);
         if (codeList.length > 0) {
             DOM.codeListBox.innerHTML = '';
             const frag = document.createDocumentFragment();
 
-            codeList.forEach((code) => {
-                const span = createElementSpan(code);
+            codeList.forEach((code, index) => {
+                const span = createElementA(code);
+                if (index >= i) span.dataset.cashe = true;
                 frag.appendChild(span);
             });
 
@@ -577,18 +584,21 @@ async function initStockList() {
         console.log(err.message);
     }
 }
-function createElementSpan(code) {
-    const span = document.createElement('span');
-    span.textContent = code.toUpperCase();
-    span.classList.add('code');
-    span.onclick = () => {
-        window.location.hash = code.toLowerCase();
-    };
-    return span;
+function createElementA(code) {
+    const a = document.createElement('a');
+    a.textContent = code.toUpperCase();
+    a.classList.add('code');
+    a.href = '#' + code;
+    return a;
 }
 initStockList();
 DOM.csh.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && DOM.csh.value) {
+        window.location.hash = DOM.csh.value.toLowerCase();
+    }
+});
+DOM.shBtn.addEventListener('click', () => {
+    if (DOM.csh.value) {
         window.location.hash = DOM.csh.value.toLowerCase();
     }
 });
