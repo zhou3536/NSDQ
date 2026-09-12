@@ -66,7 +66,7 @@ function addHistory(text) {
     const existingIndex = hst.indexOf(text);
     if (existingIndex !== -1) hst.splice(existingIndex, 1);
     hst.push(text);
-    if (hst.length > 5) hst.shift();
+    if (hst.length > 5) hst = hst.slice(-5);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(hst));
 }
 // ─────────────────────────────────────────────
