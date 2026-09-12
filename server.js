@@ -22,7 +22,7 @@ const host = process.env.HOST || '127.0.0.1';
 const port = process.env.PORT || 3000;
 const CacheControl = process.env.CacheControl * 1000;
 
-let CodeData = null;
+
 // 静态文件服务
 app.use('/st', express.static(path.join(__dirname, 'public', 'st'), {
     maxAge: '30d',
@@ -33,9 +33,8 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: true,
 }));
 
-app.get('/:code.json', async (req, res) => {
+app.get('/:code([a-z]{1,5}).json', async (req, res) => {
     const code = req.params.code.toUpperCase();
-    if (!/^[A-Z]{1,5}$/.test(code)) return next();
 
     if (cache.has(code)) {
         return res.json(cache.get(code));
