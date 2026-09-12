@@ -45,6 +45,7 @@ let currentAbortController = null;
 let statusA = true;
 let STORAGE_KEY = 'history_code';
 let hst = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let StartDate = null;
 // console.log(hst)
 
 // 格式化工具单例
@@ -95,7 +96,10 @@ async function fetchStockData(dataName) {
         DOM.statusEl.classList.remove('err');
         DOM.statusText.textContent = `数据更新至 · ${priceData.at(-1).date}`;
 
-        selectedDate = priceData[0].date;
+        // selectedDate = priceData[0].date;
+        // DOM.datePickerBtn.textContent = selectedDate;
+        // const prevDate = DOM.datePickerBtn.textContent.trim();
+        selectedDate = dateIndex.has(StartDate) ? StartDate : priceData[0].date;
         DOM.datePickerBtn.textContent = selectedDate;
 
         initChart();
@@ -251,6 +255,7 @@ function renderPicker() {
             btn.onclick = () => {
                 selectedDate = d.date;
                 DOM.datePickerBtn.textContent = selectedDate;
+                StartDate = selectedDate;
                 closePicker();
                 recompute();
             };
