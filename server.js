@@ -46,98 +46,79 @@ app.use(async (req, res, next) => {
     const regex = /^[a-zA-Z]{1,5}$/;
     if (!regex.test(newPath)) return next();
 
-    const data = await getData2(newPath)
+    const data = await getData(newPath)
     if (Array.isArray(data) && data.length > 0) {
         res.set({
-            'Cache-Control': 'max-age=1200',
+            'Cache-Control': 'max-age=600',
         });
         return res.status(200).json(data);
     } else {
-        return res.status(405).send('Not Found');
+        return res.status(400).send('Bad code');
     }
 });
 
 const dataDir = path.join(__dirname, 'data');
-await fs.mkdir(dataDir, { recursive: true });
-
-async function getCodeList() {
-    try {
-        const files = await fs.readdir(dataDir);
-        CodeData = files
-            .filter(file => path.extname(file).toLowerCase() === '.json')
-            .map(file => path.parse(file).name);
-    } catch (err) {
-        console.error(`读取目录${dataDir}失败:`, err);
-    }
-}
-
+// await fs.mkdir(dataDir, { recursive: true });
 
 const yahooFinance = new YahooFinance();
 async function getData(code) {
     try {
-        console.log(`正在获取${code}历史数据`, new Date());
+        console.log(`正在获取${code.toUpperCase()}历史数据`, new Date());
+
         const result = await yahooFinance.chart(code, {
-            period1: '2000-01-01',   // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
-            // period2: '2026-01-01',// 结束日期 (默认到最新)
-            interval: '1d',          // '1d' (日线), '1wk' (周线), '1mo' (月线)
+            period1: '2000-01-01',            // 开始日期 (支持 'YYYY-MM-DD' 或 Date 对象 / 时间戳)
+            // period2: '2020-01-01',         // 结束日期 (默认到最新)
+            interval: '1d',                   // '1d' (日线), '1wk' (周线), '1mo' (月线)
         });
 
         const quotes = result.quotes.filter(item => item.close);
-        // console.log(quotes)
         const data = transformData(quotes);
         const filePath = path.join(dataDir, `${code}.json`);
         await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 
+        const delay = 30; // 分钟
+        const timer = setTimeout(async () => {
+            try {
+                await fs.unlink(filePath);
+                console.log(`🗑️ 临时文件已自动清理: ${filePath}`);
+            } catch (err) {
+                if (err.code !== 'ENOENT') console.error(`❌ 清理文件失败 (${filePath}):`, err.message);
+            }
+        }, delay * 60000);
+        timer.unref();
+
         console.log(`✅ 数据已成功保存到: ${filePath}`);
-        return true;
+        return data;
     } catch (error) {
         console.error('❌ 获取或保存数据失败:', error);
         return false;
     }
 }
-async function getData2(code) {
-    if (!code) return false;
-    try {
-        const result = await yahooFinance.chart(code, {
-            period1: '2000-01-01',
-            interval: '1d',
-        });
-        const quotes = result.quotes.filter(item => item.close);
-        const data = transformData(quotes);
-        return data;
-    } catch (error) {
-        console.error('❌ 获取数据失败:', code);
-        return false;
-    }
-}
+
 function transformData(rawData) {
     return rawData.map(item => ({
         date: item.date.toISOString().slice(0, 10),
         close: Math.round(Number(item.close) * 10000) / 10000
     }));
 }
-async function getDatas() {
+async function clearCache() {
     try {
-        const codeEnv = process.env.CODE || '';
-        const codes = codeEnv.trim().split(/\s+/).filter(Boolean);
-        const tasks = codes.map(code => getData(code));
-        await Promise.allSettled(tasks);
-    } finally {
-        console.log('执行完毕');
-        getCodeList();
+        await fs.rm(dataDir, { recursive: true, force: true });
+        await fs.mkdir(dataDir, { recursive: true });
+        console.log('✅ 缓存目录已清空');
+    } catch (error) {
+        console.error('❌ 清理缓存失败:', error);
     }
 }
-
-
 // --- 启动服务器 ---
 app.listen(port, host, () => {
     console.log(`Start HTTP server @ ${host}:${port}`);
-    getDatas();
-
+    // clearCache();
 });
+
 cron.schedule('2 16 * * 1-5', () => {
     console.log('[cron] 美东时间 16:00，开始执行定时任务...');
-    getDatas();
+    clearCache();
 }, {
     timezone: 'America/New_York',
 });

@@ -560,30 +560,23 @@ function renderEmpty(msg) {
 // 6. 初始化与股票池载入
 // ─────────────────────────────────────────────
 async function initStockList() {
-    try {
-        const response = await fetch('/code');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const codeList = await response.json();
-        const i = codeList.length;
-        codeList.push(...hst);
-        if (codeList.length > 0) {
-            DOM.codeListBox.innerHTML = '';
-            const frag = document.createDocumentFragment();
+    const codeList = ['qqq', 'tqqq', 'spy']
+    const i = codeList.length;
+    codeList.push(...hst);
 
-            codeList.forEach((code, index) => {
-                const span = createElementA(code);
-                if (index >= i) span.dataset.cashe = true;
-                frag.appendChild(span);
-            });
+    DOM.codeListBox.innerHTML = '';
+    const frag = document.createDocumentFragment();
 
-            DOM.codeListBox.appendChild(frag);
-            hashchange();
-        }
-    } catch (err) {
-        DOM.codeListBox.innerHTML = '<h3 style="color:#ef4444;">标的获取失败</h3>'
-        console.log(err.message);
-    }
+    codeList.forEach((code, index) => {
+        const span = createElementA(code);
+        if (index >= i) span.dataset.cashe = true;
+        frag.appendChild(span);
+    });
+
+    DOM.codeListBox.appendChild(frag);
+    hashchange();
 }
+
 function createElementA(code) {
     const a = document.createElement('a');
     a.textContent = code.toUpperCase();
