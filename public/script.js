@@ -9,7 +9,9 @@ const DOM = {
     pickerPanel: document.getElementById('pickerPanel'),
     pickerBreadcrumb: document.getElementById('pickerBreadcrumb'),
     pickerGrid: document.getElementById('pickerGrid'),
+    freqSelect: document.getElementById('freqSelect'),
     amountInput: document.getElementById('amountInput'),
+    dividendInput: document.getElementById('dividendInput'),
     emptyState: document.getElementById('emptyState'),
     chartDom: document.getElementById('chart'),
     chartPanel: document.getElementById('chart-panel'),
@@ -24,6 +26,9 @@ const DOM = {
         value: document.getElementById('labelValue'),
         returnAbs: document.getElementById('labelReturnAbs'),
         returnPct: document.getElementById('labelReturn'),
+        xirr: document.getElementById('labelXirr'),
+        avgPrice: document.getElementById('labelAvgPrice'),
+        maxDrawdown: document.getElementById('labelMaxDrawdown'),
         count: document.getElementById('labelCount'),
     },
     stats: {
@@ -31,6 +36,9 @@ const DOM = {
         value: document.getElementById('statValue'),
         returnPct: document.getElementById('statReturn'),
         returnAbs: document.getElementById('statReturnAbs'),
+        xirr: document.getElementById('statXirr'),
+        avgPrice: document.getElementById('statAvgPrice'),
+        maxDrawdown: document.getElementById('statMaxDrawdown'),
         count: document.getElementById('statCount'),
     }
 };
@@ -46,7 +54,6 @@ let statusA = true;
 let STORAGE_KEY = 'history_code';
 let hst = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 let StartDate = null;
-// console.log(hst)
 
 // 格式化工具单例
 const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
@@ -61,6 +68,7 @@ function debounce(fn, delay = 200) {
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
 }
+
 function addHistory(text) {
     if (!text) return;
     const existingIndex = hst.indexOf(text);
@@ -69,13 +77,14 @@ function addHistory(text) {
     if (hst.length > 5) hst = hst.slice(-5);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(hst));
 }
+
 // ─────────────────────────────────────────────
 // 2. 数据请求与解析（含 AbortController 防竞态）
 // ─────────────────────────────────────────────
 async function fetchStockData(dataName) {
     if (!dataName) return;
     if (currentAbortController) {
-        currentAbortController.abort(); // 取消正在进行的请求
+        currentAbortController.abort();
     }
     currentAbortController = new AbortController();
 
@@ -96,9 +105,6 @@ async function fetchStockData(dataName) {
         DOM.statusEl.classList.remove('err');
         DOM.statusText.textContent = `数据更新至 · ${priceData.at(-1).date}`;
 
-        // selectedDate = priceData[0].date;
-        // DOM.datePickerBtn.textContent = selectedDate;
-        // const prevDate = DOM.datePickerBtn.textContent.trim();
         selectedDate = dateIndex.has(StartDate) ? StartDate : priceData[0].date;
         DOM.datePickerBtn.textContent = selectedDate;
 
@@ -110,16 +116,16 @@ async function fetchStockData(dataName) {
             el => el.textContent.trim().toLowerCase() === dataName.toLowerCase()
         );
         if (!hasMatch) {
-            const els = DOM.codeListBox.querySelectorAll('[data-cashe="true"]');
-            if (els.length > 4) els[0].remove();
+            const cachedEls = DOM.codeListBox.querySelectorAll('[data-cache="true"]');
+            if (cachedEls.length > 4) cachedEls[0].remove();
             const span = createElementA(dataName);
-            span.dataset.cashe = true;
+            span.dataset.cache = 'true';
             span.classList.add('code-active');
             DOM.codeListBox.appendChild(span);
             addHistory(dataName);
-        };
+        }
     } catch (err) {
-        if (err.name === 'AbortError') return; // 用户切换新标的主动取消，忽略报错
+        if (err.name === 'AbortError') return;
         DOM.statusEl.classList.add('err');
         DOM.statusText.textContent = '数据加载失败';
         DOM.emptyState.style.display = 'block';
@@ -177,7 +183,7 @@ function buildDateTree() {
 }
 
 // ─────────────────────────────────────────────
-// 3. 日期选择器（使用 DocumentFragment 优化渲染）
+// 3. 日期选择器
 // ─────────────────────────────────────────────
 let pickerLevel = 'year';
 let pickerYear = null;
@@ -207,7 +213,6 @@ function closePicker() {
 }
 
 function renderPicker() {
-    // 1. 面包屑
     let bc = `<span class="crumb ${pickerLevel === 'year' ? 'current' : ''}" data-level="year">年份</span>`;
     if (pickerYear) {
         bc += `<span class="sep">/</span><span class="crumb ${pickerLevel === 'month' ? 'current' : ''}" data-level="month">${pickerYear}</span>`;
@@ -226,7 +231,6 @@ function renderPicker() {
         });
     });
 
-    // 2. 节点网格（Fragment 批量添加）
     DOM.pickerGrid.innerHTML = '';
     const fragment = document.createDocumentFragment();
 
@@ -266,9 +270,51 @@ function renderPicker() {
 }
 
 // ─────────────────────────────────────────────
-// 4. 回测计算与 UI 同步
+// 4. 定投周期判断与 XIRR 年化算法
 // ─────────────────────────────────────────────
-// DOM.amountInput.addEventListener('input', debounce(recompute, 250));
+
+function getWeekKey(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    const day = d.getUTCDay();
+    const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setUTCDate(diff));
+    return monday.toISOString().slice(0, 10);
+}
+
+function calculateXIRR(cashFlows, guess = 0.1) {
+    if (!cashFlows || cashFlows.length < 2) return null;
+    const d0 = new Date(cashFlows[0].date + 'T00:00:00Z').getTime();
+    const yearMs = 1000 * 60 * 60 * 24 * 365.25;
+
+    let r = guess;
+    const maxIter = 60;
+    const tol = 1e-6;
+
+    for (let i = 0; i < maxIter; i++) {
+        let f = 0;
+        let df = 0;
+        for (let j = 0; j < cashFlows.length; j++) {
+            const dt = (new Date(cashFlows[j].date + 'T00:00:00Z').getTime() - d0) / yearMs;
+            const denom = Math.pow(1 + r, dt);
+            if (!isFinite(denom) || denom === 0) continue;
+            f += cashFlows[j].amount / denom;
+            df += -dt * cashFlows[j].amount / (denom * (1 + r));
+        }
+        if (Math.abs(f) < tol) return r;
+        if (Math.abs(df) < 1e-12) break;
+        const newR = r - f / df;
+        if (isNaN(newR) || !isFinite(newR) || newR <= -0.999) {
+            r = r > 0 ? r / 2 : 0.05;
+            break;
+        }
+        r = newR;
+    }
+    return isFinite(r) && r > -0.999 ? r : null;
+}
+
+// ─────────────────────────────────────────────
+// 5. 回测计算与 UI 同步
+// ─────────────────────────────────────────────
 
 function recompute() {
     if (!selectedDate || priceData.length === 0) return;
@@ -287,17 +333,27 @@ function recompute() {
         renderEmpty('请输入不小于 0 的有效金额');
         return;
     }
-    DOM.chartTitle.innerHTML = `${activeCode} 定投收益曲线`;
-    computeDCA(startIdx, amount);
+    const freq = DOM.freqSelect ? DOM.freqSelect.value : 'weekly';
+    const divYield = parseFloat(DOM.dividendInput.value) || 0;
+    DOM.chartTitle.innerHTML = `${activeCode} 定投收益曲线 (${getFreqName(freq)} / 分红率 ${divYield}%)`;
+    computeDCA(startIdx, amount, freq, divYield);
 }
 
-// 统一更新数据看板，避免冗余
+function getFreqName(freq) {
+    if (freq === 'daily') return '日定投';
+    if (freq === 'weekly') return '周定投';
+    return '月定投';
+}
+
 function updateMetricUI({ labels, values, ret, retAbs, count, isStock }) {
     DOM.labels.invested.textContent = labels.invested;
     DOM.labels.value.textContent = labels.value;
     DOM.labels.returnAbs.textContent = labels.returnAbs;
     DOM.labels.returnPct.textContent = labels.returnPct;
     DOM.labels.count.textContent = labels.count;
+    DOM.labels.xirr.textContent = labels.xirr;
+    DOM.labels.avgPrice.textContent = labels.avgPrice;
+    DOM.labels.maxDrawdown.textContent = labels.maxDrawdown;
 
     DOM.stats.invested.textContent = isStock ? '$' + fmtMoney2.format(values.invested) : fmtMoney.format(values.invested);
     DOM.stats.value.textContent = isStock ? '$' + fmtMoney2.format(values.value) : fmtMoney.format(values.value);
@@ -307,21 +363,70 @@ function updateMetricUI({ labels, values, ret, retAbs, count, isStock }) {
     DOM.stats.returnPct.className = `v ${cls}`;
     DOM.stats.value.className = `v ${cls}`;
 
-    DOM.stats.returnAbs.textContent = (isStock ? fmtMoney2.format(retAbs) : fmtMoney.format(retAbs));
+    DOM.stats.returnAbs.textContent = isStock ? fmtMoney2.format(retAbs) : fmtMoney.format(retAbs);
     DOM.stats.returnAbs.className = `v ${cls}`;
+
+    // 年化收益率
+    if (values.xirr !== null && values.xirr !== undefined) {
+        const xirrCls = values.xirr > 0 ? 'pos' : (values.xirr < 0 ? 'neg' : 'neutral');
+        DOM.stats.xirr.textContent = fmtPct(values.xirr);
+        DOM.stats.xirr.className = `v ${xirrCls}`;
+    } else {
+        DOM.stats.xirr.textContent = '—';
+        DOM.stats.xirr.className = 'v neutral';
+    }
+
+    // 持仓均价
+    DOM.stats.avgPrice.textContent = values.avgPrice !== undefined ? '$' + fmtMoney2.format(values.avgPrice) : '—';
+    DOM.stats.avgPrice.className = 'v neutral';
+
+    // 最大回撤
+    if (values.maxDrawdown !== undefined) {
+        DOM.stats.maxDrawdown.textContent = '-' + fmtPct(values.maxDrawdown);
+        DOM.stats.maxDrawdown.className = 'v neg';
+    } else {
+        DOM.stats.maxDrawdown.textContent = '—';
+        DOM.stats.maxDrawdown.className = 'v neutral';
+    }
+
     DOM.stats.count.textContent = count;
 }
 
 function computeStockPrice(startIdx) {
-    // DOM.chartTitle.innerHTML = `${activeCode} 股价曲线`;
     const series = priceData.slice(startIdx);
     const first = series[0];
     const last = series[series.length - 1];
     const diff = last.close - first.close;
 
+    let peak = -Infinity;
+    let maxDd = 0;
+    for (let i = 0; i < series.length; i++) {
+        if (series[i].close > peak) peak = series[i].close;
+        const dd = (peak - series[i].close) / peak;
+        if (dd > maxDd) maxDd = dd;
+    }
+
+    const years = (new Date(last.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    const cagr = years > 0.1 ? Math.pow(last.close / first.close, 1 / years) - 1 : diff / first.close;
+
     updateMetricUI({
-        labels: { invested: '起始价格', value: '最新价格', returnAbs: '涨跌额', returnPct: '涨跌幅', count: '交易天数' },
-        values: { invested: first.close, value: last.close },
+        labels: {
+            invested: '起始价格',
+            value: '最新价格',
+            returnAbs: '涨跌额',
+            returnPct: '涨跌幅',
+            xirr: '年化收益',
+            avgPrice: '最高价格',
+            maxDrawdown: '最大回撤',
+            count: '交易天数'
+        },
+        values: {
+            invested: first.close,
+            value: last.close,
+            xirr: cagr,
+            avgPrice: peak,
+            maxDrawdown: maxDd
+        },
         ret: diff / first.close,
         retAbs: diff,
         count: series.length,
@@ -331,34 +436,98 @@ function computeStockPrice(startIdx) {
     updateStockChart(series);
 }
 
-function computeDCA(startIdx, amount) {
-    //       DOM.chartTitle.innerHTML = `${activeCode} 定投收益曲线`;
+function computeDCA(startIdx, amount, freq, dividendYield) {
     let shares = 0;
     let invested = 0;
-    const series = new Array(priceData.length - startIdx);
+    let investCount = 0;
+    const series = [];
+    const cashFlows = [];
 
-    for (let i = startIdx, k = 0; i < priceData.length; i++, k++) {
+    const dailyDivRate = dividendYield > 0 ? Math.pow(1 + dividendYield / 100, 1 / 252) - 1 : 0;
+
+    let lastWeekKey = null;
+    let lastMonthKey = null;
+    let peakValue = 0;
+    let maxDrawdown = 0;
+
+    for (let i = startIdx; i < priceData.length; i++) {
         const row = priceData[i];
-        shares += amount / row.close;
-        invested += amount;
-        const value = shares * row.close;
-        series[k] = {
+
+        // 1. 分红复权：按交易日复利追加份额
+        if (shares > 0 && dailyDivRate > 0) {
+            shares *= (1 + dailyDivRate);
+        }
+
+        // 2. 周期判断
+        let shouldInvest = false;
+        if (freq === 'daily') {
+            shouldInvest = true;
+        } else if (freq === 'weekly') {
+            const currentWeekKey = getWeekKey(row.date);
+            if (currentWeekKey !== lastWeekKey) {
+                shouldInvest = true;
+                lastWeekKey = currentWeekKey;
+            }
+        } else if (freq === 'monthly') {
+            const currentMonthKey = `${row.y}-${row.m}`;
+            if (currentMonthKey !== lastMonthKey) {
+                shouldInvest = true;
+                lastMonthKey = currentMonthKey;
+            }
+        }
+
+        if (shouldInvest) {
+            shares += amount / row.close;
+            invested += amount;
+            investCount++;
+            cashFlows.push({ date: row.date, amount: -amount });
+        }
+
+        const currentValue = shares * row.close;
+
+        if (currentValue > peakValue) peakValue = currentValue;
+        const currentDd = peakValue > 0 ? (peakValue - currentValue) / peakValue : 0;
+        if (currentDd > maxDrawdown) maxDrawdown = currentDd;
+
+        series.push({
             date: row.date,
             close: row.close,
             invested: invested,
-            value: value,
-            ret: (value - invested) / invested,
+            value: currentValue,
+            ret: invested > 0 ? (currentValue - invested) / invested : 0,
             shares: shares
-        };
+        });
     }
 
     const last = series[series.length - 1];
+
+    if (cashFlows.length > 0 && last.value > 0) {
+        cashFlows.push({ date: last.date, amount: last.value });
+    }
+    const xirr = calculateXIRR(cashFlows);
+    const avgPrice = shares > 0 ? invested / shares : 0;
+
     updateMetricUI({
-        labels: { invested: '累计投入', value: '当前市值', returnAbs: '浮盈', returnPct: '总收益率', count: '定投次数' },
-        values: { invested: last.invested, value: last.value },
+        labels: {
+            invested: '累计投入',
+            value: '当前市值',
+            returnAbs: '浮盈',
+            returnPct: '总收益率',
+            xirr: '平均年化',
+            avgPrice: '持仓均价',
+            maxDrawdown: '最大回撤',
+            count: '定投次数'
+        },
+        values: {
+            invested: last.invested,
+            value: last.value,
+            xirr: xirr,
+            avgPrice: avgPrice,
+            maxDrawdown: maxDrawdown
+        },
         ret: last.ret,
         retAbs: last.value - last.invested,
-        count: series.length,
+        count: investCount,
         isStock: false
     });
 
@@ -366,7 +535,7 @@ function computeDCA(startIdx, amount) {
 }
 
 // ─────────────────────────────────────────────
-// 5. ECharts 实例管理与渲染优化
+// 6. ECharts 实例管理与渲染
 // ─────────────────────────────────────────────
 function initChart() {
     DOM.chartDom.style.display = 'block';
@@ -543,11 +712,11 @@ function updateChart(series) {
               <div class="fl-date">${s.date}</div>
               <div class="fl"><span>收盘价</span><b>$${fmtMoney2.format(s.close)}</b></div>
               <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
-              <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
-              <div class="fl"><span>投入</span><b>${fmtMoney.format(s.invested)}</b></div>
-              <div class="fl"><span>市值</span><b>${fmtMoney.format(s.value)}</b></div>
-              <div class="fl"><span>浮盈</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
-              <div class="fl"><span></span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
+              <div class="fl"><span>标的总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
+              <div class="fl"><span>累计投入</span><b>$${fmtMoney.format(s.invested)}</b></div>
+              <div class="fl"><span>当前市值</span><b>$${fmtMoney.format(s.value)}</b></div>
+              <div class="fl"><span>总收益率</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
+              <div class="fl"><span>浮盈金额</span><b style="color:${s.ret >= 0 ? green : red};">$${fmtMoney.format(s.value - s.invested)}</b></div>
             `;
             }
         }
@@ -562,10 +731,11 @@ function renderEmpty(msg) {
     DOM.emptyState.innerHTML = `<b>无法计算</b><br>${msg}`;
 }
 
-// 6. 初始化与股票池载入
+// ─────────────────────────────────────────────
+// 7. 初始化与股票池载入
 // ─────────────────────────────────────────────
 async function initStockList() {
-    const codeList = ['qqq', 'tqqq', 'spy']
+    const codeList = ['qqq', 'tqqq', 'spy'];
     const i = codeList.length;
     codeList.push(...hst);
 
@@ -574,7 +744,7 @@ async function initStockList() {
 
     codeList.forEach((code, index) => {
         const span = createElementA(code);
-        if (index >= i) span.dataset.cashe = true;
+        if (index >= i) span.dataset.cache = 'true';
         frag.appendChild(span);
     });
 
@@ -589,7 +759,9 @@ function createElementA(code) {
     a.href = '#' + code;
     return a;
 }
+
 initStockList();
+
 DOM.csh.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && DOM.csh.value) {
         window.location.hash = DOM.csh.value.toLowerCase();
@@ -604,7 +776,7 @@ DOM.csh.addEventListener('input', (e) => {
     const start = DOM.csh.selectionStart;
     const end = DOM.csh.selectionEnd;
     const value = DOM.csh.value;
-    const newValue = value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 5);
+    const newValue = value.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase().slice(0, 10);
     if (value !== newValue) {
         DOM.csh.value = newValue;
         const newStart = Math.min(start, newValue.length);
@@ -612,28 +784,33 @@ DOM.csh.addEventListener('input', (e) => {
         DOM.csh.setSelectionRange(newStart, newEnd);
     }
 });
+
 DOM.swBtn.addEventListener('click', () => {
     statusA = !statusA;
     recompute();
-})
+});
 DOM.okBtn.addEventListener('click', () => {
     statusA = false;
     recompute();
 });
 
+// DOM.amountInput.addEventListener('input', debounce(recompute, 300));
+// DOM.dividendInput.addEventListener('input', debounce(recompute, 300));
+DOM.freqSelect.addEventListener('change', recompute);
+
 window.addEventListener('hashchange', hashchange);
 async function hashchange() {
     let code = window.location.hash.substring(1);
-    const els = DOM.codeListBox.querySelectorAll('.code')
-    if (!code) code = els[0].textContent;
+    const els = DOM.codeListBox.querySelectorAll('.code');
+    if (!code && els.length > 0) code = els[0].textContent;
+    if (!code) return;
     activeCode = code.toUpperCase();
     els.forEach(el => el.classList.toggle('code-active', el.textContent.toUpperCase() === activeCode));
     fetchStockData(code);
 }
 
-
-const fsBtn = document.getElementById('fsBtn'); // 开关按钮
-const chartPanel = document.getElementById('chart-panel'); // 要全屏的元素
+const fsBtn = document.getElementById('fsBtn');
+const chartPanel = document.getElementById('chart-panel');
 
 fsBtn.addEventListener('click', () => {
     const isFullscreen = chartPanel.classList.toggle('web-fullscreen');
@@ -659,4 +836,3 @@ function triggerChartResize() {
         window.dispatchEvent(new Event('resize'));
     }, 300);
 }
-

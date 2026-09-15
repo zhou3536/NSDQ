@@ -5,15 +5,16 @@
     "main": "server.js",
     "type": "module",
     "scripts": {
-        "start": "node server.js"
+        "start": "node server.js",
+        "dev": "node --watch server.js"
     },
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "compression": "^1.8.2",
         "dotenv": "^16.6.1",
         "express": "^4.21.2",
         "lru-cache": "^11.5.2",
-        "multer": "^2.3.0",
         "yahoo-finance2": "^4.0.2"
     }
 }

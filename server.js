@@ -1,17 +1,17 @@
 console.log('Service is trying to start...');
 
 import express from 'express';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import YahooFinance from 'yahoo-finance2';
-import fs from 'fs/promises';
 import dotenv from 'dotenv';
 dotenv.config();
 import { LRUCache } from 'lru-cache';
 
 const cache = new LRUCache({
     max: 1000,                 // 最多缓存 1000 
-    ttl: 60000 * 30,           // 自动 30 分钟过期！
+    ttl: 60000 * 10,           // 自动XX分钟过期！
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +21,11 @@ const app = express();
 const host = process.env.HOST || '127.0.0.1';
 const port = process.env.PORT || 3000;
 const CacheControl = process.env.CacheControl * 1000;
+
+// 启用数据压缩
+app.use(compression({
+    threshold: 1024, // 大于 1KB 时自动启用压缩
+}));
 
 
 // 静态文件服务
@@ -32,8 +37,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: CacheControl,
     etag: true,
 }));
-
-app.get('/:code([a-z]{1,5}).json', async (req, res) => {
+// 测试数据兜底（仅供测试与本地离线使用）
+app.use(express.static(path.join(__dirname, 'test-data'), {
+    maxAge: '0',
+    etag: true,
+}));
+// 动态股票数据接口（支持大小写、点号与连字符，如 BRK-B / BRK.B）
+app.get('/:code([a-zA-Z0-9.-]{1,10}).json', async (req, res) => {
     const code = req.params.code.toUpperCase();
 
     if (cache.has(code)) {
@@ -46,7 +56,7 @@ app.get('/:code([a-z]{1,5}).json', async (req, res) => {
         res.set({ 'Cache-Control': 'max-age=300', });
         return res.json(data);
     }
-    return res.status(400).send('Not Found');
+    return res.status(404).json({ error: `Stock data for ${code} not found` });
 });
 
 const yahooFinance = new YahooFinance();
