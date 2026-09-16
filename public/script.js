@@ -360,12 +360,12 @@ function computeStockPrice(startIdx) {
     const cagrCls = cagr > 0 ? 'pos' : (cagr < 0 ? 'neg' : 'neutral');
 
     updateMetricUI([
-        { label: '起始价格', value: '$' + fmtMoney2.format(first.close) },
-        { label: '最新价格', value: '$' + fmtMoney2.format(last.close), cls },
-        { label: '涨跌额', value: (diff >= 0 ? '+' : '') + '$' + fmtMoney2.format(diff), cls },
-        { label: '涨跌幅', value: (diff >= 0 ? '+' : '') + fmtPct(diff / first.close), cls },
-        { label: '年化收益', value: (cagr >= 0 ? '+' : '') + fmtPct(cagr), cls: cagrCls },
-        { label: '最高价格', value: '$' + fmtMoney2.format(peak) },
+        { label: '起始价格', value: fmtMoney2.format(first.close) },
+        { label: '最新价格', value: fmtMoney2.format(last.close), cls },
+        { label: '涨跌额', value: fmtMoney2.format(diff), cls },
+        { label: '涨跌幅', value: fmtPct(diff / first.close), cls },
+        { label: '年化收益', value: fmtPct(cagr), cls: cagrCls },
+        { label: '最高价格', value: fmtMoney2.format(peak) },
         { label: '交易天数', value: series.length },
         { label: '最大回撤', value: '-' + fmtPct(maxDd), cls: 'neg' }
     ]);
@@ -450,12 +450,12 @@ function computeDCA(startIdx, amount, freq, dividendYield) {
 
     updateMetricUI([
         { label: '定投次数', value: investCount },
-        { label: '累计投入', value: '$' + fmtMoney.format(last.invested) },
-        { label: '当前市值', value: '$' + fmtMoney.format(last.value), cls: retCls },
-        { label: '浮盈', value: (diff >= 0 ? '+' : '') + '$' + fmtMoney.format(diff), cls: retCls },
-        { label: '总收益率', value: (last.ret >= 0 ? '+' : '') + fmtPct(last.ret), cls: retCls },
-        { label: '平均年化', value: xirr !== null ? (xirr >= 0 ? '+' : '') + fmtPct(xirr) : '—', cls: xirr !== null ? xirrCls : 'neutral' },
-        { label: '持仓均价', value: avgPrice > 0 ? '$' + fmtMoney2.format(avgPrice) : '—' },
+        { label: '累计投入', value: fmtMoney.format(last.invested) },
+        { label: '当前市值', value: fmtMoney.format(last.value), cls: retCls },
+        { label: '浮盈', value: fmtMoney.format(diff), cls: retCls },
+        { label: '总收益率', value: fmtPct(last.ret), cls: retCls },
+        { label: '平均年化', value: xirr !== null ? (xirr < 0 ? '-' : '') + fmtPct(Math.abs(xirr)) : '—', cls: xirr !== null ? xirrCls : 'neutral' },
+        { label: '持仓均价', value: avgPrice > 0 ? fmtMoney2.format(avgPrice) : '—' },
         { label: '最大回撤', value: '-' + fmtPct(maxDrawdown), cls: 'neg' }
     ]);
 
@@ -514,7 +514,7 @@ function updateStockChart(series) {
             ...commonChartOptions.yAxis,
             axisLabel: {
                 ...commonChartOptions.yAxis.axisLabel,
-                formatter: (v) => '$' + v.toFixed(0)
+                formatter: (v) => v.toFixed(0)
             }
         },
         dataZoom: [
@@ -558,7 +558,7 @@ function updateStockChart(series) {
 
                 return `
               <div class="fl-date">${s.date}</div>
-              <div class="fl"><span>收盘价</span><b>$${fmtMoney2.format(s.close)}</b></div>
+              <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
               <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
               <div class="fl"><span>总涨幅</span><b style="color:${totalRet >= 0 ? green : red};">${fmtPct(totalRet)}</b></div>
             `;
@@ -638,13 +638,13 @@ function updateChart(series) {
 
                 return `
               <div class="fl-date">${s.date}</div>
-              <div class="fl"><span>收盘价</span><b>$${fmtMoney2.format(s.close)}</b></div>
+              <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
               <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
               <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
-              <div class="fl"><span>累计投入</span><b>$${fmtMoney.format(s.invested)}</b></div>
-              <div class="fl"><span>当前市值</span><b>$${fmtMoney.format(s.value)}</b></div>
+              <div class="fl"><span>累计投入</span><b>${fmtMoney.format(s.invested)}</b></div>
+              <div class="fl"><span>当前市值</span><b>${fmtMoney.format(s.value)}</b></div>
               <div class="fl"><span>总收益率</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
-              <div class="fl"><span>浮盈金额</span><b style="color:${s.ret >= 0 ? green : red};">$${fmtMoney.format(s.value - s.invested)}</b></div>
+              <div class="fl"><span>浮盈金额</span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
             `;
             }
         }
