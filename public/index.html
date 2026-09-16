@@ -53,60 +53,34 @@
 
         <div class="field">
           <label id="amountLabel">每期定投金额</label>
-          <input type="number" class="term-input" id="amountInput" value="10" min="1">
+          <input type="number" class="term-input" id="amountInput" value="10" min="1" max="100">
         </div>
 
         <div class="field">
           <label>年化分红(%)</label>
-          <input type="number" class="term-input" id="dividendInput" value="0" min="0" max="100" step="0.1" placeholder="默认0">
-          <span class="btn" id="okBtn">计算</span>
+          <div class="input-with-btn">
+            <input type="number" class="term-input" id="dividendInput" value="0" min="0" max="100" step="0.1"
+              placeholder="默认0">
+            <span class="btn" id="okBtn">计算</span>
+          </div>
         </div>
       </div>
       <div class="summary" id="summaryEl">
         <div class="stat">
-          <div class="k" id="labelInvested">累计投入</div>
-          <div class="v neutral" id="statInvested">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelValue">当前市值</div>
-          <div class="v neutral" id="statValue">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelReturnAbs">浮盈</div>
-          <div class="v neutral" id="statReturnAbs">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelReturn">总收益率</div>
-          <div class="v neutral" id="statReturn">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelXirr">平均年化</div>
-          <div class="v neutral" id="statXirr">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelAvgPrice">持仓均价</div>
-          <div class="v neutral" id="statAvgPrice">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelMaxDrawdown">最大回撤</div>
-          <div class="v neutral" id="statMaxDrawdown">—</div>
-        </div>
-        <div class="stat">
-          <div class="k" id="labelCount">定投次数</div>
-          <div class="v neutral" id="statCount">—</div>
+          <div class="k">起始价格</div>
+          <div class="v neutral">未选择标的</div>
         </div>
       </div>
 
-      <div class="chart-panel-head">
+      <div class="chart-panel-head" id="chart-panel-head">
         <span class="btn" id="swBtn">切换</span>
-        <span class="btn" id="fsBtn">全屏</span>
+        <span class="btn" id="fsBtn">横屏</span>
         <h2 id="chartTitle"></h2>
       </div>
       <div id="chart"></div>
-      <div id="emptyState" class="empty-state">请先选择定投目标</div>
+      <div id="emptyState" class="empty-state">请先选择定投标的</div>
     </div>
   </div>
-
   <script src="st/echarts.min.js"></script>
   <script src="script.js"></script>
 </body>

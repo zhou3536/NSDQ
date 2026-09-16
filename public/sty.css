@@ -4,6 +4,7 @@
     --bg-panel-2: #f0f0f0;
     --bg-input: #f8f8f8;
     --bg-btn: #aee2e4;
+    --bg-btn-h: #97c9cc;
     --border: #b4b8c0;
     --border-bright: #adb8cc;
     --text-primary: #030303;
@@ -28,7 +29,9 @@ body {
     padding: 0;
     background: var(--bg-void);
     color: var(--text-primary);
-    min-width: 900px;
+    min-width: 360px;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 a {
@@ -209,6 +212,12 @@ input.term-input {
     cursor: pointer;
 }
 
+.input-with-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .field-suffix {
     display: flex;
     align-items: center;
@@ -244,7 +253,7 @@ input.term-input {
     top: calc(100% + 6px);
     left: 0;
     z-index: 50;
-    background: var(--bg-panel-2);
+    background: var(--bg-void);
     border: 1px solid var(--border-bright);
     border-radius: 3px;
     padding: 12px;
@@ -319,18 +328,18 @@ input.term-input {
 .summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 3px;
+    gap: 5px;
     overflow: hidden;
     margin-bottom: 18px;
-    min-height: 73px;
+    opacity: 0;
+    /* min-height: 68px; */
 }
 
 .stat {
-    background: var(--bg-panel);
-    padding: 14px 18px;
+    background: #c1d0ec3d;
+    padding: 10px;
+    border-radius: 10px;
+    animation: fadeIn-1 0.3s ease;
 }
 
 .stat .k {
@@ -381,7 +390,7 @@ input.term-input {
 }
 
 .chart-panel-head {
-    padding: 0 10px;
+    opacity: 0;
     display: flex;
     gap: 8px;
     align-items: center;
@@ -392,7 +401,7 @@ input.term-input {
     font-size: 17px;
     font-weight: 600;
     color: var(--text-dim);
-    letter-spacing: .06em;
+    /* letter-spacing: .06em; */
     text-transform: uppercase;
     margin: 0;
 }
@@ -465,10 +474,14 @@ input.term-input {
 
 /* 当屏幕是横屏（宽度大于高度）时的全屏尺寸 */
 @media (orientation: landscape) {
-    #chart-panel.web-fullscreen {
+    /* #chart-panel.web-fullscreen {
         width: 100vw !important;
         height: 100vh !important;
         transform: none;
+    } */
+
+    #fsBtn {
+        display: none;
     }
 }
 
@@ -486,18 +499,32 @@ input.term-input {
         transform-origin: center center;
     }
 
+    .web-fullscreen .summary,
+    .web-fullscreen .panel {
+        display: none;
+    }
+
     .stat .v {
         font-size: 15px;
+    }
+
+    #fsBtn {
+        display: block;
     }
 }
 
 .btn {
     background-color: var(--bg-btn);
     padding: 3px 10px;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     user-select: none;
     font-size: 15px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    background-color: var(--bg-btn-h);
 }
 
 
@@ -516,4 +543,240 @@ input.term-input {
     font-size: 14px;
     color: #222;
     margin-bottom: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   手机端与平板竖屏适配 (Mobile Responsive CSS)
+   ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .shell {
+        padding: 10px 5px 30px;
+    }
+
+    /* 顶部导航 */
+    .topbar {
+        align-items: center;
+        padding-bottom: 8px;
+        gap: 8px;
+    }
+
+    .topbar h1 {
+        font-size: 18px;
+        padding: 4px 10px;
+    }
+
+    .status {
+        font-size: 11px;
+        text-align: right;
+    }
+
+    /* 搜索区与热门股票 */
+    .SearchArea {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .sh-input {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 10px;
+    }
+
+    #csh {
+        flex: 1;
+        width: auto;
+        font-size: 14px;
+        /* 防止 iOS 自动聚焦放大页面 */
+    }
+
+    #CodeListBox {
+        margin: 2px 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: wrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    #CodeListBox::-webkit-scrollbar {
+        display: none;
+    }
+
+    .code {
+        font-size: 14px;
+        padding: 5px 12px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .chart-panel {
+        border: none;
+        padding: 0;
+
+    }
+
+    /* 参数控制面板：2 列网格自适应 */
+    .panel {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px 8px;
+        padding: 0;
+        align-items: stretch;
+        margin-bottom: 8px;
+
+    }
+
+    .field {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .field label {
+        font-size: 12px;
+        white-space: nowrap;
+        color: var(--text-dim);
+    }
+
+    .term-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 30px;
+        font-size: 14px;
+        padding: 2px 5px;
+        box-sizing: border-box;
+    }
+
+    #amountInput {
+        width: 100% !important;
+    }
+
+    .input-with-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+    }
+
+    #dividendInput {
+        flex: 1;
+        width: 0 !important;
+        min-width: 0 !important;
+    }
+
+    #okBtn {
+        /* height: 38px; */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* 日期选择弹层：居中遮罩浮层，便于触控 */
+    /* .picker-panel {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90vw;
+        max-width: 320px;
+        z-index: 99999;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+        background: var(--bg-panel);
+    } */
+
+    .picker-grid button {
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+
+    /* 核心数据看板：紧凑 2 列网格 */
+    .summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        margin-bottom: 8px;
+        min-height: auto;
+    }
+
+    .stat {
+        padding: 5px 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 3px;
+    }
+
+    .stat .k {
+        font-size: 12px;
+        letter-spacing: .02em;
+        margin-bottom: 3px;
+    }
+
+    .stat .v {
+        font-size: 15px;
+    }
+
+    /* 图表控制头与高度 */
+    .chart-panel-head {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0;
+        margin-bottom: 8px;
+    }
+
+    .chart-panel-head .btn {
+        padding: 4px 10px;
+        font-size: 13px;
+    }
+
+    .chart-panel-head h2 {
+        font-size: 13px;
+        width: 100%;
+        order: 3;
+        margin-top: 4px;
+    }
+
+    #chart {
+        height: 60vw;
+        /* min-height: 280px; */
+    }
+
+    .empty-state {
+        height: 280px;
+        padding: 60px 10px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .topbar h1 {
+        font-size: 16px;
+    }
+
+    .stat .v {
+        font-size: 12px;
+    }
+}
+
+
+
+
+@keyframes fadeIn-1 {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }

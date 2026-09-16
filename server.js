@@ -24,7 +24,7 @@ const CacheControl = process.env.CacheControl * 1000;
 
 // 启用数据压缩
 app.use(compression({
-    threshold: 1024, // 大于 1KB 时自动启用压缩
+    threshold: 1024 * 25, // 大于XX KB时自动启用压缩
 }));
 
 

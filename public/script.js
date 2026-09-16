@@ -14,33 +14,15 @@ const DOM = {
     dividendInput: document.getElementById('dividendInput'),
     emptyState: document.getElementById('emptyState'),
     chartDom: document.getElementById('chart'),
+    chartHead: document.getElementById('chart-panel-head'),
     chartPanel: document.getElementById('chart-panel'),
     chartTitle: document.getElementById('chartTitle'),
     codeListBox: document.getElementById('CodeListBox'),
+    summaryEl: document.getElementById('summaryEl'),
     okBtn: document.getElementById('okBtn'),
     swBtn: document.getElementById('swBtn'),
     fsBtn: document.getElementById('fsBtn'),
     shBtn: document.getElementById('shBtn'),
-    labels: {
-        invested: document.getElementById('labelInvested'),
-        value: document.getElementById('labelValue'),
-        returnAbs: document.getElementById('labelReturnAbs'),
-        returnPct: document.getElementById('labelReturn'),
-        xirr: document.getElementById('labelXirr'),
-        avgPrice: document.getElementById('labelAvgPrice'),
-        maxDrawdown: document.getElementById('labelMaxDrawdown'),
-        count: document.getElementById('labelCount'),
-    },
-    stats: {
-        invested: document.getElementById('statInvested'),
-        value: document.getElementById('statValue'),
-        returnPct: document.getElementById('statReturn'),
-        returnAbs: document.getElementById('statReturnAbs'),
-        xirr: document.getElementById('statXirr'),
-        avgPrice: document.getElementById('statAvgPrice'),
-        maxDrawdown: document.getElementById('statMaxDrawdown'),
-        count: document.getElementById('statCount'),
-    }
 };
 
 let priceData = [];
@@ -345,51 +327,16 @@ function getFreqName(freq) {
     return '月定投';
 }
 
-function updateMetricUI({ labels, values, ret, retAbs, count, isStock }) {
-    DOM.labels.invested.textContent = labels.invested;
-    DOM.labels.value.textContent = labels.value;
-    DOM.labels.returnAbs.textContent = labels.returnAbs;
-    DOM.labels.returnPct.textContent = labels.returnPct;
-    DOM.labels.count.textContent = labels.count;
-    DOM.labels.xirr.textContent = labels.xirr;
-    DOM.labels.avgPrice.textContent = labels.avgPrice;
-    DOM.labels.maxDrawdown.textContent = labels.maxDrawdown;
-
-    DOM.stats.invested.textContent = isStock ? '$' + fmtMoney2.format(values.invested) : fmtMoney.format(values.invested);
-    DOM.stats.value.textContent = isStock ? '$' + fmtMoney2.format(values.value) : fmtMoney.format(values.value);
-
-    const cls = ret > 0 ? 'pos' : (ret < 0 ? 'neg' : 'neutral');
-    DOM.stats.returnPct.textContent = fmtPct(ret);
-    DOM.stats.returnPct.className = `v ${cls}`;
-    DOM.stats.value.className = `v ${cls}`;
-
-    DOM.stats.returnAbs.textContent = isStock ? fmtMoney2.format(retAbs) : fmtMoney.format(retAbs);
-    DOM.stats.returnAbs.className = `v ${cls}`;
-
-    // 年化收益率
-    if (values.xirr !== null && values.xirr !== undefined) {
-        const xirrCls = values.xirr > 0 ? 'pos' : (values.xirr < 0 ? 'neg' : 'neutral');
-        DOM.stats.xirr.textContent = fmtPct(values.xirr);
-        DOM.stats.xirr.className = `v ${xirrCls}`;
-    } else {
-        DOM.stats.xirr.textContent = '—';
-        DOM.stats.xirr.className = 'v neutral';
-    }
-
-    // 持仓均价
-    DOM.stats.avgPrice.textContent = values.avgPrice !== undefined ? '$' + fmtMoney2.format(values.avgPrice) : '—';
-    DOM.stats.avgPrice.className = 'v neutral';
-
-    // 最大回撤
-    if (values.maxDrawdown !== undefined) {
-        DOM.stats.maxDrawdown.textContent = '-' + fmtPct(values.maxDrawdown);
-        DOM.stats.maxDrawdown.className = 'v neg';
-    } else {
-        DOM.stats.maxDrawdown.textContent = '—';
-        DOM.stats.maxDrawdown.className = 'v neutral';
-    }
-
-    DOM.stats.count.textContent = count;
+function updateMetricUI(metrics) {
+    if (!DOM.summaryEl || !Array.isArray(metrics)) return;
+    DOM.summaryEl.style.opacity = 1;
+    DOM.chartHead.style.opacity = 1;
+    DOM.summaryEl.innerHTML = metrics.map(m => `
+        <div class="stat">
+            <div class="k">${m.label}</div>
+            <div class="v ${m.cls || 'neutral'}">${m.value}</div>
+        </div>
+    `).join('');
 }
 
 function computeStockPrice(startIdx) {
@@ -409,29 +356,19 @@ function computeStockPrice(startIdx) {
     const years = (new Date(last.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
     const cagr = years > 0.1 ? Math.pow(last.close / first.close, 1 / years) - 1 : diff / first.close;
 
-    updateMetricUI({
-        labels: {
-            invested: '起始价格',
-            value: '最新价格',
-            returnAbs: '涨跌额',
-            returnPct: '涨跌幅',
-            xirr: '年化收益',
-            avgPrice: '最高价格',
-            maxDrawdown: '最大回撤',
-            count: '交易天数'
-        },
-        values: {
-            invested: first.close,
-            value: last.close,
-            xirr: cagr,
-            avgPrice: peak,
-            maxDrawdown: maxDd
-        },
-        ret: diff / first.close,
-        retAbs: diff,
-        count: series.length,
-        isStock: true
-    });
+    const cls = diff > 0 ? 'pos' : (diff < 0 ? 'neg' : 'neutral');
+    const cagrCls = cagr > 0 ? 'pos' : (cagr < 0 ? 'neg' : 'neutral');
+
+    updateMetricUI([
+        { label: '起始价格', value: '$' + fmtMoney2.format(first.close) },
+        { label: '最新价格', value: '$' + fmtMoney2.format(last.close), cls },
+        { label: '涨跌额', value: (diff >= 0 ? '+' : '') + '$' + fmtMoney2.format(diff), cls },
+        { label: '涨跌幅', value: (diff >= 0 ? '+' : '') + fmtPct(diff / first.close), cls },
+        { label: '年化收益', value: (cagr >= 0 ? '+' : '') + fmtPct(cagr), cls: cagrCls },
+        { label: '最高价格', value: '$' + fmtMoney2.format(peak) },
+        { label: '交易天数', value: series.length },
+        { label: '最大回撤', value: '-' + fmtPct(maxDd), cls: 'neg' }
+    ]);
 
     updateStockChart(series);
 }
@@ -507,29 +444,20 @@ function computeDCA(startIdx, amount, freq, dividendYield) {
     const xirr = calculateXIRR(cashFlows);
     const avgPrice = shares > 0 ? invested / shares : 0;
 
-    updateMetricUI({
-        labels: {
-            invested: '累计投入',
-            value: '当前市值',
-            returnAbs: '浮盈',
-            returnPct: '总收益率',
-            xirr: '平均年化',
-            avgPrice: '持仓均价',
-            maxDrawdown: '最大回撤',
-            count: '定投次数'
-        },
-        values: {
-            invested: last.invested,
-            value: last.value,
-            xirr: xirr,
-            avgPrice: avgPrice,
-            maxDrawdown: maxDrawdown
-        },
-        ret: last.ret,
-        retAbs: last.value - last.invested,
-        count: investCount,
-        isStock: false
-    });
+    const diff = last.value - last.invested;
+    const retCls = last.ret > 0 ? 'pos' : (last.ret < 0 ? 'neg' : 'neutral');
+    const xirrCls = xirr > 0 ? 'pos' : (xirr < 0 ? 'neg' : 'neutral');
+
+    updateMetricUI([
+        { label: '定投次数', value: investCount },
+        { label: '累计投入', value: '$' + fmtMoney.format(last.invested) },
+        { label: '当前市值', value: '$' + fmtMoney.format(last.value), cls: retCls },
+        { label: '浮盈', value: (diff >= 0 ? '+' : '') + '$' + fmtMoney.format(diff), cls: retCls },
+        { label: '总收益率', value: (last.ret >= 0 ? '+' : '') + fmtPct(last.ret), cls: retCls },
+        { label: '平均年化', value: xirr !== null ? (xirr >= 0 ? '+' : '') + fmtPct(xirr) : '—', cls: xirr !== null ? xirrCls : 'neutral' },
+        { label: '持仓均价', value: avgPrice > 0 ? '$' + fmtMoney2.format(avgPrice) : '—' },
+        { label: '最大回撤', value: '-' + fmtPct(maxDrawdown), cls: 'neg' }
+    ]);
 
     updateChart(series);
 }
@@ -712,7 +640,7 @@ function updateChart(series) {
               <div class="fl-date">${s.date}</div>
               <div class="fl"><span>收盘价</span><b>$${fmtMoney2.format(s.close)}</b></div>
               <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
-              <div class="fl"><span>标的总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
+              <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
               <div class="fl"><span>累计投入</span><b>$${fmtMoney.format(s.invested)}</b></div>
               <div class="fl"><span>当前市值</span><b>$${fmtMoney.format(s.value)}</b></div>
               <div class="fl"><span>总收益率</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
@@ -800,9 +728,11 @@ DOM.freqSelect.addEventListener('change', recompute);
 
 window.addEventListener('hashchange', hashchange);
 async function hashchange() {
+    DOM.summaryEl.style.opacity = 0;
+    DOM.chartHead.style.opacity = 0;
     let code = window.location.hash.substring(1);
     const els = DOM.codeListBox.querySelectorAll('.code');
-    if (!code && els.length > 0) code = els[0].textContent;
+    // if (!code && els.length > 0) code = els[0].textContent;
     if (!code) return;
     activeCode = code.toUpperCase();
     els.forEach(el => el.classList.toggle('code-active', el.textContent.toUpperCase() === activeCode));
@@ -815,11 +745,11 @@ const chartPanel = document.getElementById('chart-panel');
 fsBtn.addEventListener('click', () => {
     const isFullscreen = chartPanel.classList.toggle('web-fullscreen');
     if (isFullscreen) {
-        fsBtn.innerText = '退出全屏';
+        fsBtn.innerText = '退出横屏';
         document.body.style.overflow = 'hidden';
         triggerChartResize();
     } else {
-        fsBtn.innerText = '全屏';
+        fsBtn.innerText = '横屏';
         document.body.style.overflow = '';
         triggerChartResize();
     }
