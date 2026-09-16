@@ -109,10 +109,10 @@ a {
 .status {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     font-size: 11px;
     color: var(--text-dim);
-    letter-spacing: .06em;
+    /* letter-spacing: .06em; */
     text-transform: uppercase;
 }
 
@@ -122,7 +122,7 @@ a {
     border-radius: 50%;
     background: var(--green);
     box-shadow: 0 0 0 3px rgba(62, 217, 144, 0.12);
-    animation: pulse 2.4s ease-in-out infinite;
+    /* animation: pulse 2.4s ease-in-out infinite; */
 }
 
 @media (prefers-reduced-motion: reduce) {
