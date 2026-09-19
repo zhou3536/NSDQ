@@ -64,6 +64,7 @@ function addHistory(text) {
 // 2. 数据请求与解析（含 AbortController 防竞态）
 // ─────────────────────────────────────────────
 async function fetchStockData(dataName) {
+    DOM.csh.blur();
     if (!dataName) return;
     if (currentAbortController) {
         currentAbortController.abort();
@@ -454,8 +455,8 @@ function computeDCA(startIdx, amount, freq, dividendYield) {
         { label: '当前市值', value: fmtMoney.format(last.value), cls: retCls },
         { label: '浮盈', value: fmtMoney.format(diff), cls: retCls },
         { label: '总收益率', value: fmtPct(last.ret), cls: retCls },
-        { label: '平均年化', value: xirr !== null ? (xirr < 0 ? '-' : '') + fmtPct(Math.abs(xirr)) : '—', cls: xirr !== null ? xirrCls : 'neutral' },
         { label: '持仓均价', value: avgPrice > 0 ? fmtMoney2.format(avgPrice) : '—' },
+        { label: '持仓数量', value: fmtMoney2.format(last.shares) },
         { label: '最大回撤', value: '-' + fmtPct(maxDrawdown), cls: 'neg' }
     ]);
 
@@ -476,7 +477,7 @@ function initChart() {
 const commonChartOptions = {
     backgroundColor: 'transparent',
     textStyle: { fontFamily: "'IBM Plex Mono', monospace" },
-    grid: { left: 56, right: 24, top: 20, bottom: 64 },
+    grid: { left: 45, right: 3, top: 20, bottom: 64 },
     xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -755,11 +756,11 @@ fsBtn.addEventListener('click', () => {
     }
 });
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && chartPanel.classList.contains('web-fullscreen')) {
-        fsBtn.click();
-    }
-});
+// document.addEventListener('keydown', (e) => {
+//     if (e.key === 'Escape' && chartPanel.classList.contains('web-fullscreen')) {
+//         fsBtn.click();
+//     }
+// });
 
 function triggerChartResize() {
     setTimeout(() => {

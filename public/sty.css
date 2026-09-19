@@ -462,56 +462,15 @@ input.term-input {
     color: #fff;
 }
 
-#chart-panel.web-fullscreen {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 999999 !important;
-    /* 保证在最顶层 */
-    margin: 0 !important;
-    padding: 0 !important;
-}
+
 
 /* 当屏幕是横屏（宽度大于高度）时的全屏尺寸 */
 @media (orientation: landscape) {
-    /* #chart-panel.web-fullscreen {
-        width: 100vw !important;
-        height: 100vh !important;
-        transform: none;
-    } */
-
     #fsBtn {
         display: none;
     }
 }
 
-/* 核心：当浏览器高度大于宽度时（如手机竖屏），强制旋转 90 度实现横屏 */
-@media (orientation: portrait) {
-    #chart-panel.web-fullscreen {
-        width: 100dvh !important;
-        /* 宽度变成视口高度 */
-        height: 100dvw !important;
-        /* 高度变成视口宽度 */
-        top: 50% !important;
-        left: 50% !important;
-        /* 居中并顺时针旋转90度 */
-        transform: translate(-50%, -50%) rotate(90deg);
-        transform-origin: center center;
-    }
-
-    .web-fullscreen .summary,
-    .web-fullscreen .panel {
-        display: none;
-    }
-
-    .stat .v {
-        font-size: 15px;
-    }
-
-    #fsBtn {
-        display: block;
-    }
-}
 
 .btn {
     background-color: var(--bg-btn);
@@ -574,8 +533,8 @@ input.term-input {
     .SearchArea {
         flex-direction: column;
         align-items: stretch;
-        gap: 6px;
-        margin-top: 8px;
+        gap: 2px;
+        margin-top: 6px;
     }
 
     .sh-input {
@@ -597,7 +556,8 @@ input.term-input {
         margin: 2px 0;
         overflow-x: auto;
         overflow-y: hidden;
-        flex-wrap: wrap;
+        flex-wrap:nowrap ;
+        gap: 2px;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 4px;
         scrollbar-width: none;
@@ -608,10 +568,11 @@ input.term-input {
     }
 
     .code {
-        font-size: 14px;
-        padding: 5px 12px;
+        font-size: 12px;
+        padding:  5px;
         flex-shrink: 0;
         white-space: nowrap;
+        border-radius: 5px;
     }
 
     .chart-panel {
@@ -634,7 +595,7 @@ input.term-input {
     .field {
         flex-direction: column;
         align-items: stretch;
-        gap: 4px;
+        gap: 2px;
         width: 100%;
     }
 
@@ -779,4 +740,76 @@ input.term-input {
     to {
         opacity: 1;
     }
+}
+
+/* 当浏览器高度大于宽度时（如手机竖屏），强制旋转 90 度实现横屏 */
+@media (orientation: portrait) {
+    #chart-panel.web-fullscreen {
+        position: fixed;
+        z-index: 999999;
+        margin: 0;
+        padding: 5px;
+        width: 100dvh;
+        height: 100dvw;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* #chart-panel.web-fullscreen {} */
+
+    .web-fullscreen .stat {
+        flex-direction: column;
+
+    }
+
+    .web-fullscreen .stat .k,
+    .web-fullscreen .stat .v {
+        font-size: 12px;
+        margin-bottom: 0;
+    }
+
+    .web-fullscreen .summary {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr))
+    }
+
+    .web-fullscreen .panel {
+        margin-bottom: 2px;
+        display: flex;
+
+    }
+
+    .web-fullscreen .chart-panel-head {
+        flex-wrap: nowrap
+    }
+
+    .web-fullscreen .chart-panel-head h2 {
+        width: auto;
+
+    }
+
+    .web-fullscreen #chart {
+        height: auto;
+        flex: 1;
+    }
+
+    #fsBtn {
+        display: block;
+    }
+
+    .web-fullscreen .picker-grid {
+        /* max-height: 55vw; */
+        overflow-y: auto;
+    }
+
+    .web-fullscreen .picker-panel {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 360px;
+    }
+
 }
