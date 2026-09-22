@@ -23,6 +23,7 @@ const DOM = {
     swBtn: document.getElementById('swBtn'),
     fsBtn: document.getElementById('fsBtn'),
     shBtn: document.getElementById('shBtn'),
+    flushBtn: document.getElementById('flush'),
 };
 
 let priceData = [];
@@ -32,10 +33,20 @@ let selectedDate = null;
 let chartInstance = null;
 let activeCode = '';
 let currentAbortController = null;
-let statusA = true;
 let STORAGE_KEY = 'history_code';
 let hst = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-let StartDate = null;
+let StartDate = localStorage.getItem('StartDate') || null;
+
+
+let rawData = localStorage.getItem('statusA');
+let statusA = rawData !== null ? JSON.parse(rawData) : true;
+
+// console.log(statusA)
+// console.log(StartDate)
+
+let savedFreq = localStorage.getItem('freqSelectValue');
+if (savedFreq) DOM.freqSelect.value = savedFreq;
+DOM.freqSelect.addEventListener('change', () => localStorage.setItem('freqSelectValue', freqSelect.value));
 
 // 格式化工具单例
 const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
@@ -71,12 +82,12 @@ async function fetchStockData(dataName) {
     }
     currentAbortController = new AbortController();
 
+    DOM.emptyState.innerHTML = '<img src="st/loading.gif" alt="加载中...">';
     DOM.emptyState.style.display = 'block';
-    DOM.emptyState.innerHTML = '<img src="loading.gif" alt="加载中...">';
     DOM.chartDom.style.display = 'none';
 
     try {
-        const res = await fetch(`${dataName.toLowerCase()}.json`, { signal: currentAbortController.signal });
+        const res = await fetch(`api/${dataName.toLowerCase()}.json`, { signal: currentAbortController.signal });
         if (!res.ok) throw new Error(`HTTP 错误: ${res.status}`);
         const json = await res.json();
 
@@ -243,6 +254,7 @@ function renderPicker() {
                 selectedDate = d.date;
                 DOM.datePickerBtn.textContent = selectedDate;
                 StartDate = selectedDate;
+                localStorage.setItem('StartDate', StartDate);
                 closePicker();
                 recompute();
             };
@@ -361,13 +373,13 @@ function computeStockPrice(startIdx) {
     const cagrCls = cagr > 0 ? 'pos' : (cagr < 0 ? 'neg' : 'neutral');
 
     updateMetricUI([
+        { label: '交易日', value: series.length },
         { label: '起始价格', value: fmtMoney2.format(first.close) },
         { label: '最新价格', value: fmtMoney2.format(last.close), cls },
+        { label: '最高价格', value: fmtMoney2.format(peak) },
         { label: '涨跌额', value: fmtMoney2.format(diff), cls },
         { label: '涨跌幅', value: fmtPct(diff / first.close), cls },
         { label: '年化收益', value: fmtPct(cagr), cls: cagrCls },
-        { label: '最高价格', value: fmtMoney2.format(peak) },
-        { label: '交易天数', value: series.length },
         { label: '最大回撤', value: '-' + fmtPct(maxDd), cls: 'neg' }
     ]);
 
@@ -716,10 +728,12 @@ DOM.csh.addEventListener('input', (e) => {
 
 DOM.swBtn.addEventListener('click', () => {
     statusA = !statusA;
+    localStorage.setItem('statusA', JSON.stringify(statusA));
     recompute();
 });
 DOM.okBtn.addEventListener('click', () => {
     statusA = false;
+    localStorage.setItem('statusA', JSON.stringify(statusA));
     recompute();
 });
 
@@ -766,4 +780,11 @@ function triggerChartResize() {
     setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
     }, 300);
+}
+
+DOM.flushBtn.addEventListener('click', clearCacheAndHome)
+function clearCacheAndHome(event) {
+    event.preventDefault();
+    localStorage.clear();
+    window.location.href = '/';
 }

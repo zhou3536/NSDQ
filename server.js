@@ -38,13 +38,14 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: true,
 }));
 // 测试数据兜底（仅供测试与本地离线使用）
-app.use(express.static(path.join(__dirname, 'test-data'), {
+app.use('/api/', express.static(path.join(__dirname, 'test-data'), {
     maxAge: '0',
     etag: true,
 }));
 // 动态股票数据接口（支持大小写、点号与连字符，如 BRK-B / BRK.B）
-app.get('/:code([a-zA-Z0-9.-]{1,10}).json', async (req, res) => {
+app.get('/api/:code([a-zA-Z0-9.-]{1,10}).json', async (req, res) => {
     const code = req.params.code.toUpperCase();
+    res.set({ 'Cache-Control': 'max-age=300', });
 
     if (cache.has(code)) {
         return res.json(cache.get(code));
@@ -53,7 +54,6 @@ app.get('/:code([a-zA-Z0-9.-]{1,10}).json', async (req, res) => {
     const data = await getData(code);
     if (data) {
         cache.set(code, data);
-        res.set({ 'Cache-Control': 'max-age=300', });
         return res.json(data);
     }
     return res.status(404).json({ error: `Stock data for ${code} not found` });
