@@ -375,8 +375,8 @@ function computeStockPrice(startIdx) {
     updateMetricUI([
         { label: '交易日', value: series.length },
         { label: '起始价格', value: fmtMoney2.format(first.close) },
-        { label: '最新价格', value: fmtMoney2.format(last.close), cls },
-        { label: '最高价格', value: fmtMoney2.format(peak) },
+        { label: '最新收盘', value: fmtMoney2.format(last.close), cls },
+        { label: '最高收盘', value: fmtMoney2.format(peak) },
         { label: '涨跌额', value: fmtMoney2.format(diff), cls },
         { label: '涨跌幅', value: fmtPct(diff / first.close), cls },
         { label: '年化收益', value: fmtPct(cagr), cls: cagrCls },
