@@ -53,6 +53,38 @@ const fmtMoney = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 const fmtMoney2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (x) => (x * 100).toFixed(2) + '%';
 
+// 坐标轴金额格式化：大于1000显示1k，大于1000k显示1m，以此类推，最多1位小数
+function formatMoneyAxis(val) {
+    if (val === 0 || val == null || isNaN(val)) return '0';
+    const sign = val < 0 ? '-' : '';
+    let abs = Math.abs(val);
+
+    const units = [
+        { divisor: 1e12, symbol: 't' },
+        { divisor: 1e9, symbol: 'b' },
+        { divisor: 1e6, symbol: 'm' },
+        { divisor: 1e3, symbol: 'k' },
+    ];
+
+    for (let i = 0; i < units.length; i++) {
+        const u = units[i];
+        if (abs >= u.divisor) {
+            let num = abs / u.divisor;
+            let str = Number(num.toFixed(1)).toString();
+            if (parseFloat(str) >= 1000 && i > 0) {
+                return sign + '1' + units[i - 1].symbol;
+            }
+            return sign + str + u.symbol;
+        }
+    }
+
+    let str = Number(abs.toFixed(1)).toString();
+    if (parseFloat(str) >= 1000) {
+        return sign + '1k';
+    }
+    return sign + str;
+}
+
 // 防抖工具函数
 function debounce(fn, delay = 200) {
     let timer = null;
@@ -587,20 +619,38 @@ function updateChart(series) {
     DOM.chartDom.style.display = 'block';
 
     const dates = [];
-    const retData = [];
+    const valueData = [];
+    const investedData = [];
     for (let i = 0; i < series.length; i++) {
         dates.push(series[i].date);
-        retData.push(+(series[i].ret * 100).toFixed(3));
+        valueData.push(+series[i].value.toFixed(2));
+        investedData.push(+series[i].invested.toFixed(2));
     }
 
     const option = {
         ...commonChartOptions,
+        grid: {
+            ...commonChartOptions.grid,
+            left: 48,
+            right: 10,
+            top: 24
+        },
+        legend: {
+            show: true,
+            data: ['定投收益', '本金'],
+            top: 0,
+            right: 12,
+            icon: 'roundRect',
+            itemWidth: 14,
+            itemHeight: 3,
+            textStyle: { color: '#565B64', fontSize: 10 }
+        },
         xAxis: { ...commonChartOptions.xAxis, data: dates },
         yAxis: {
             ...commonChartOptions.yAxis,
             axisLabel: {
                 ...commonChartOptions.yAxis.axisLabel,
-                formatter: (v) => v + '%'
+                formatter: formatMoneyAxis
             }
         },
         dataZoom: [
@@ -613,26 +663,28 @@ function updateChart(series) {
                 textStyle: { color: '#565B64', fontSize: 9 }
             }
         ],
-        series: [{
-            name: '累计收益率',
-            type: 'line',
-            data: retData,
-            symbol: 'none',
-            lineStyle: { color: '#FF9F1C', width: 1.6 },
-            areaStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: 'rgba(255,159,28,0.28)' },
-                    { offset: 1, color: 'rgba(255,159,28,0.02)' }
-                ])
-            },
-            markLine: {
-                silent: true,
+        series: [
+            {
+                name: '定投收益',
+                type: 'line',
+                data: valueData,
                 symbol: 'none',
-                lineStyle: { color: '#ccc', type: 'dashed', width: 1 },
-                label: { show: false },
-                data: [{ yAxis: 0 }]
+                lineStyle: { color: '#FF9F1C', width: 1.6 },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(255,159,28,0.28)' },
+                        { offset: 1, color: 'rgba(255,159,28,0.02)' }
+                    ])
+                }
+            },
+            {
+                name: '本金',
+                type: 'line',
+                data: investedData,
+                symbol: 'none',
+                lineStyle: { color: '#3A86FF', width: 1.6 }
             }
-        }],
+        ],
         tooltip: {
             trigger: 'axis',
             backgroundColor: '#fff',
