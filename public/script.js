@@ -629,6 +629,7 @@ function updateChart(series) {
 
     const option = {
         ...commonChartOptions,
+        color: ['#FF9F1C', '#3A86FF'],
         grid: {
             ...commonChartOptions.grid,
             left: 48,
@@ -637,7 +638,10 @@ function updateChart(series) {
         },
         legend: {
             show: true,
-            data: ['定投收益', '本金'],
+            data: [
+                { name: '市值', itemStyle: { color: '#FF9F1C' } },
+                { name: '本金', itemStyle: { color: '#3A86FF' } }
+            ],
             top: 0,
             right: 12,
             icon: 'roundRect',
@@ -665,10 +669,12 @@ function updateChart(series) {
         ],
         series: [
             {
-                name: '定投收益',
+                name: '市值',
                 type: 'line',
                 data: valueData,
                 symbol: 'none',
+                color: '#FF9F1C',
+                itemStyle: { color: '#FF9F1C' },
                 lineStyle: { color: '#FF9F1C', width: 1.6 },
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -682,6 +688,8 @@ function updateChart(series) {
                 type: 'line',
                 data: investedData,
                 symbol: 'none',
+                color: '#3A86FF',
+                itemStyle: { color: '#3A86FF' },
                 lineStyle: { color: '#3A86FF', width: 1.6 }
             }
         ],
@@ -708,8 +716,8 @@ function updateChart(series) {
               <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
               <div class="fl"><span>累计投入</span><b>${fmtMoney.format(s.invested)}</b></div>
               <div class="fl"><span>股票价值</span><b>${fmtMoney.format(s.value)}</b></div>
-              <div class="fl"><span>总收益率</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
-              <div class="fl"><span>浮盈金额</span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
+              <div class="fl"><span>综合浮盈</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
+              <div class="fl"><span></span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
             `;
             }
         }
