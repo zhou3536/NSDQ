@@ -46,9 +46,16 @@ a {
 .shell {
     max-width: 1600px;
     margin: 0 auto;
-    padding: 10px 28px 40px;
+    padding: 15px 15px 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
 }
-
+footer{
+    font-size: 14px;
+    padding: 5px 0;
+}
 /* ── top bar ───────────────────────────── */
 .topbar {
     display: flex;
@@ -187,6 +194,7 @@ a {
     min-width: 100px;
     text-align: left;
     cursor: pointer;
+    line-height: 1;
 }
 
 .term-input::-webkit-outer-spin-button,
@@ -386,7 +394,9 @@ input.term-input {
     padding: 16px 20px 8px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    flex: 1;
+    min-height: 0;
 }
 
 .chart-panel-head {
@@ -413,8 +423,10 @@ input.term-input {
 
 #chart {
     width: 100%;
-    height: 55vh;
+    /* height: 55vh; */
     display: none;
+    flex: 1;
+    min-height: 0;
 }
 
 .empty-state {
@@ -422,13 +434,19 @@ input.term-input {
     text-align: center;
     color: var(--text-dim);
     font-size: 18px;
-    height: 460px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     animation: fadeIn-2 0.3s ease;
 }
+
 @keyframes fadeIn-2 {
     0% {
         opacity: 0;
     }
+
     70% {
         opacity: 0;
     }
@@ -437,6 +455,7 @@ input.term-input {
         opacity: 1;
     }
 }
+
 .empty-state b {
     color: var(--red);
     display: block;
@@ -568,7 +587,7 @@ input.term-input {
         margin: 2px 0;
         overflow-x: auto;
         overflow-y: hidden;
-        flex-wrap:nowrap ;
+        flex-wrap: nowrap;
         gap: 2px;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 4px;
@@ -581,7 +600,7 @@ input.term-input {
 
     .code {
         font-size: 12px;
-        padding:  5px;
+        padding: 5px;
         flex-shrink: 0;
         white-space: nowrap;
         border-radius: 5px;
@@ -720,8 +739,9 @@ input.term-input {
     }
 
     #chart {
-        height: 60vw;
-        /* min-height: 280px; */
+        width: 100%;
+        flex: 1;
+        min-height: 260px;
     }
 
     .empty-state {

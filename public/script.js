@@ -510,12 +510,24 @@ function computeDCA(startIdx, amount, freq, dividendYield) {
 // ─────────────────────────────────────────────
 // 6. ECharts 实例管理与渲染
 // ─────────────────────────────────────────────
+let chartResizeObserver = null;
+
 function initChart() {
     DOM.chartDom.style.display = 'block';
     if (!chartInstance) {
         chartInstance = echarts.init(DOM.chartDom, null, { renderer: 'canvas' });
         window.addEventListener('resize', () => chartInstance && chartInstance.resize());
+        
+        if (window.ResizeObserver) {
+            chartResizeObserver = new ResizeObserver(() => {
+                if (chartInstance) {
+                    chartInstance.resize();
+                }
+            });
+            chartResizeObserver.observe(DOM.chartDom);
+        }
     }
+    chartInstance.resize();
 }
 
 const commonChartOptions = {
@@ -612,6 +624,8 @@ function updateStockChart(series) {
     };
 
     chartInstance.setOption(option, true);
+    chartInstance.resize();
+    requestAnimationFrame(() => chartInstance && chartInstance.resize());
 }
 
 function updateChart(series) {
@@ -647,7 +661,7 @@ function updateChart(series) {
             icon: 'roundRect',
             itemWidth: 14,
             itemHeight: 3,
-            textStyle: { color: '#565B64', fontSize: 10 }
+            textStyle: { color: '#565B64', fontSize: 12 }
         },
         xAxis: { ...commonChartOptions.xAxis, data: dates },
         yAxis: {
@@ -724,6 +738,8 @@ function updateChart(series) {
     };
 
     chartInstance.setOption(option, true);
+    chartInstance.resize();
+    requestAnimationFrame(() => chartInstance && chartInstance.resize());
 }
 
 function renderEmpty(msg) {
