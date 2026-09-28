@@ -188,13 +188,13 @@ footer{
     border: 1px solid var(--border-bright);
     color: var(--text-primary);
     font-size: 14px;
-    padding: 6px 6px;
+    padding: 0 6px;
     border-radius: 6px;
     outline: none;
     min-width: 100px;
     text-align: left;
     cursor: pointer;
-    line-height: 1;
+    height: 30px;
 }
 
 .term-input::-webkit-outer-spin-button,
