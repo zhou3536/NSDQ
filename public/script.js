@@ -517,7 +517,7 @@ function initChart() {
     if (!chartInstance) {
         chartInstance = echarts.init(DOM.chartDom, null, { renderer: 'canvas' });
         window.addEventListener('resize', () => chartInstance && chartInstance.resize());
-        
+
         if (window.ResizeObserver) {
             chartResizeObserver = new ResizeObserver(() => {
                 if (chartInstance) {
@@ -605,20 +605,26 @@ function updateStockChart(series) {
             padding: 12,
             textStyle: { color: '#222', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
             formatter: (params) => {
+                const dataIdx = params[0].dataIndex;
                 const s = series[params[0].dataIndex];
                 const green = 'var(--green, #22c55e)';
                 const red = 'var(--red, #ef4444)';
+                const gray = '#777';
                 const curIdx = dateIndex.get(s.date);
                 const prevClose = curIdx > 0 ? priceData[curIdx - 1].close : null;
                 const dailyRet = prevClose ? (s.close - prevClose) / prevClose : 0;
                 const totalRet = (s.close - basePrice) / basePrice;
+                let prevPeak = 0;
+                for (let i = 0; i <= dataIdx; i++) { if (series[i].close > prevPeak) prevPeak = series[i].close }
+                const dd = prevPeak > 0 ? (s.close - prevPeak) / prevPeak : 0;
 
                 return `
-              <div class="fl-date">${s.date}</div>
-              <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
-              <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
-              <div class="fl"><span>总涨幅</span><b style="color:${totalRet >= 0 ? green : red};">${fmtPct(totalRet)}</b></div>
-            `;
+                <div class="fl-date">${s.date}</div>
+                <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
+                <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
+                <div class="fl"><span>区间涨幅</span><b style="color:${totalRet >= 0 ? green : red};">${fmtPct(totalRet)}</b></div>
+                <div class="fl"><span>前高回撤</span><b style="color:${dd < 0 ? red : gray};">${fmtPct(dd)}</b></div>
+                `;
             }
         }
     };
@@ -724,15 +730,15 @@ function updateChart(series) {
                 const priceRatio = s.close / series[0].close;
 
                 return `
-              <div class="fl-date">${s.date}</div>
-              <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
-              <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
-              <div class="fl"><span>总涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
-              <div class="fl"><span>累计投入</span><b>${fmtMoney.format(s.invested)}</b></div>
-              <div class="fl"><span>股票价值</span><b>${fmtMoney.format(s.value)}</b></div>
-              <div class="fl"><span>综合浮盈</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
-              <div class="fl"><span></span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
-            `;
+                <div class="fl-date">${s.date}</div>
+                <div class="fl"><span>收盘价</span><b>${fmtMoney2.format(s.close)}</b></div>
+                <div class="fl"><span>日涨幅</span><b style="color:${dailyRet >= 0 ? green : red};">${prevClose ? fmtPct(dailyRet) : '—'}</b></div>
+                <div class="fl"><span>区间涨幅</span><b style="color:${priceRatio >= 1 ? green : red};">${fmtPct(priceRatio - 1)}</b></div>
+                <div class="fl"><span>累计投入</span><b>${fmtMoney.format(s.invested)}</b></div>
+                <div class="fl"><span>股票价值</span><b>${fmtMoney.format(s.value)}</b></div>
+                <div class="fl"><span>综合浮盈</span><b style="color:${s.ret >= 0 ? green : red};">${fmtPct(s.ret)}</b></div>
+                <div class="fl"><span></span><b style="color:${s.ret >= 0 ? green : red};">${fmtMoney.format(s.value - s.invested)}</b></div>
+                `;
             }
         }
     };
