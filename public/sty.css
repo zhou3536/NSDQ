@@ -10,7 +10,7 @@
     --text-primary: #030303;
     --text-secondary: #001131;
     --text-dim: #070707;
-    --amber: #91601b;
+    --amber: #008bdb;
     --amber-dim: #ecc58d;
     --green: rgb(0, 172, 0);
     --red: rgb(218, 0, 0);
@@ -51,10 +51,13 @@ a {
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
+    min-height: 667px;
 }
-footer{
+
+footer {
     font-size: 14px;
     padding: 5px 0;
+    text-align: center;
 }
 /* ── top bar ───────────────────────────── */
 .topbar {
@@ -95,13 +98,14 @@ footer{
 }
 
 .sh-input {
-    background: var(--bg-input);
+    background: transparent;
     border: 1px solid var(--border-bright);
     color: var(--text-primary);
     font-size: 14px;
     padding: 6px;
     border-radius: 6px;
     min-width: 100px;
+    transition: border-color 0.2s ease-in-out;
 }
 
 .sh-input span {
@@ -184,17 +188,18 @@ footer{
 }
 
 .term-input {
-    background: var(--bg-input);
+    background: transparent;
     border: 1px solid var(--border-bright);
     color: var(--text-primary);
     font-size: 14px;
     padding: 0 6px;
-    border-radius: 6px;
+    border-radius: 5px;
     outline: none;
     min-width: 100px;
     text-align: left;
     cursor: pointer;
     height: 30px;
+    transition: border-color 0.2s ease-in-out;
 }
 
 .term-input::-webkit-outer-spin-button,
@@ -262,8 +267,8 @@ input.term-input {
     left: 0;
     z-index: 50;
     background: var(--bg-void);
-    border: 1px solid var(--border-bright);
-    border-radius: 3px;
+    /* border: 1px solid var(--border-bright); */
+    border-radius: 5px;
     padding: 12px;
     width: 280px;
     box-shadow: 2px 5px 15px rgba(0, 0, 0, 0.5);
@@ -277,7 +282,7 @@ input.term-input {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 14px;
     color: var(--text-dim);
     margin-bottom: 10px;
     padding-bottom: 8px;
@@ -318,7 +323,7 @@ input.term-input {
     padding: 8px 4px;
     border-radius: 2px;
     cursor: pointer;
-    transition: border-color .1s, color .1s;
+    transition: border-color .2s, color .2s;
 }
 
 .picker-grid button:hover {
@@ -435,10 +440,6 @@ input.term-input {
     color: var(--text-dim);
     font-size: 18px;
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     animation: fadeIn-2 0.3s ease;
 }
 
@@ -540,7 +541,7 @@ input.term-input {
    ───────────────────────────────────────────── */
 @media (max-width: 768px) {
     .shell {
-        padding: 10px 5px 30px;
+        padding: 5px 5px 0;
     }
 
     /* 顶部导航 */
@@ -741,7 +742,7 @@ input.term-input {
     #chart {
         width: 100%;
         flex: 1;
-        min-height: 260px;
+        /* min-height: 260px; */
     }
 
     .empty-state {

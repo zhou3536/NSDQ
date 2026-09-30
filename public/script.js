@@ -239,7 +239,7 @@ function closePicker() {
 }
 
 function renderPicker() {
-    let bc = `<span class="crumb ${pickerLevel === 'year' ? 'current' : ''}" data-level="year">年份</span>`;
+    let bc = `<span class="crumb ${pickerLevel === 'year' ? 'current' : ''}" data-level="year">选择</span>`;
     if (pickerYear) {
         bc += `<span class="sep">/</span><span class="crumb ${pickerLevel === 'month' ? 'current' : ''}" data-level="month">${pickerYear}</span>`;
     }
@@ -589,7 +589,7 @@ function updateStockChart(series) {
             type: 'line',
             data: closePrices,
             symbol: 'none',
-            lineStyle: { color: '#3A86FF', width: 1.6 },
+            lineStyle: { color: '#3A86FF', width: 1 },
             areaStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     { offset: 0, color: 'rgba(58, 134, 255, 0.28)' },
@@ -646,9 +646,9 @@ function updateChart(series) {
         color: ['#FF9F1C', '#3A86FF'],
         grid: {
             ...commonChartOptions.grid,
-            left: 48,
-            right: 10,
-            top: 24
+            // left: 48,
+            // right: 10,
+            // top: 24
         },
         legend: {
             show: true,
@@ -689,7 +689,7 @@ function updateChart(series) {
                 symbol: 'none',
                 color: '#FF9F1C',
                 itemStyle: { color: '#FF9F1C' },
-                lineStyle: { color: '#FF9F1C', width: 1.6 },
+                lineStyle: { color: '#FF9F1C', width: 1 },
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                         { offset: 0, color: 'rgba(255,159,28,0.28)' },
@@ -704,7 +704,7 @@ function updateChart(series) {
                 symbol: 'none',
                 color: '#3A86FF',
                 itemStyle: { color: '#3A86FF' },
-                lineStyle: { color: '#3A86FF', width: 1.6 }
+                lineStyle: { color: '#3A86FF', width: 1 }
             }
         ],
         tooltip: {
@@ -813,7 +813,20 @@ DOM.okBtn.addEventListener('click', () => {
     recompute();
 });
 
-// DOM.amountInput.addEventListener('input', debounce(recompute, 300));
+DOM.amountInput.addEventListener('input', (e) => {
+    let val = parseInt(e.target.value);
+    if (isNaN(val)) return;
+    if (val > 10000) e.target.value = 10000;
+    if (val < 1) e.target.value = 1;
+    console.log('input', e.target.value);
+});
+DOM.dividendInput.addEventListener('input', (e) => {
+    let val = parseInt(e.target.value);
+    if (isNaN(val)) return;
+    if (val > 20) e.target.value = 20;
+    if (val < 0) e.target.value = 0;
+    console.log('input', e.target.value);
+});
 // DOM.dividendInput.addEventListener('input', debounce(recompute, 300));
 DOM.freqSelect.addEventListener('change', recompute);
 
